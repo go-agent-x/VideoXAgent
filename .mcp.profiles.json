@@ -1,0 +1,459 @@
+{
+  "mcpServers": {
+    "audio-transcription": {
+      "command": "./.venvs/audio/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/audio/audio-transcription-mcp/server.py"
+      ],
+      "env": {
+        "MCP_ALLOW_MODEL_DOWNLOAD": "0",
+        "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1",
+        "PYTHONUNBUFFERED": "1",
+        "HF_HUB_ETAG_TIMEOUT": "8",
+        "HF_HUB_DOWNLOAD_TIMEOUT": "20",
+        "HF_HUB_DISABLE_TELEMETRY": "1",
+        "HF_HUB_DISABLE_PROGRESS_BARS": "1",
+        "WHISPERX_MODEL_SIZE": "large-v3",
+        "WHISPERX_COMPUTE_TYPE": "float16"
+      }
+    },
+    "speaker-diarization": {
+      "command": "./.venvs/audio/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/audio/speaker-diarization-mcp/server.py"
+      ],
+      "env": {
+        "WHISPERX_MODEL_SIZE": "large-v3",
+        "WHISPERX_COMPUTE_TYPE": "float16",
+        "HF_TOKEN": "",
+        "HF_HUB_DISABLE_TELEMETRY": "1"
+      }
+    },
+    "subtitle": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/text/subtitle-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "video-duration": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/video-duration-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "scene-caption": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/scene-caption-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash"
+      }
+    },
+    "scene-query": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/scene-query-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash"
+      }
+    },
+    "segment-deep-query": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/segment-deep-query-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "GDINO_PYTHON": "./.venvs/vision/bin/python"
+      }
+    },
+    "grounding-dino": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/grounding-dino-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "frame-extract": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/frame-extract-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "auto-segment": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/auto-segment-mcp/server.py"
+      ],
+      "env": {
+        "SAM_MODEL_TYPE": "vit_h",
+        "SAM_CHECKPOINT": "models/sam_vit_h_4b8939.pth",
+        "SAM_DEVICE": "cuda"
+      }
+    },
+    "prompt-segment": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/prompt-segment-mcp/server.py"
+      ],
+      "env": {
+        "SAM_MODEL_TYPE": "vit_h",
+        "SAM_CHECKPOINT": "models/sam_vit_h_4b8939.pth",
+        "SAM_DEVICE": "cuda"
+      }
+    },
+    "object-track": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/object-track-mcp/server.py"
+      ],
+      "env": {
+        "SAM2_MODEL_CFG": "configs/sam2.1/sam2.1_hiera_l.yaml",
+        "SAM2_CHECKPOINT": "models/sam2.1_hiera_large.pt",
+        "SAM_DEVICE": "cuda"
+      }
+    },
+    "obj-count-sequence": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/obj-count-sequence-mcp/server.py"
+      ],
+      "env": {
+        "SAM2_MODEL_CFG": "configs/sam2.1/sam2.1_hiera_l.yaml",
+        "SAM2_CHECKPOINT": "models/sam2.1_hiera_large.pt",
+        "SAM_DEVICE": "cuda"
+      }
+    },
+    "motion-analyze": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/motion/motion-analyze-mcp/server.py"
+      ],
+      "env": {
+        "SAM2_MODEL_CFG": "configs/sam2.1/sam2.1_hiera_l.yaml",
+        "SAM2_CHECKPOINT": "models/sam2.1_hiera_large.pt",
+        "SAM_DEVICE": "cuda"
+      }
+    },
+    "spatial-analyze": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/spatial/spatial-analyze-mcp/server.py"
+      ],
+      "env": {
+        "SAM2_MODEL_CFG": "configs/sam2.1/sam2.1_hiera_l.yaml",
+        "SAM2_CHECKPOINT": "models/sam2.1_hiera_large.pt",
+        "SAM_DEVICE": "cuda"
+      }
+    },
+    "ocr": {
+      "command": "./.venvs/ocr/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/text/ocr-mcp/server.py"
+      ],
+      "env": {
+        "PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK": "True"
+      }
+    },
+    "inspect-image": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/inspect-image-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash",
+        "VLM_MODEL_FALLBACKS": "gpt-4.1,qwen2.5-vl-72b-instruct,qwen3-vl-plus,qwen-vl-max"
+      }
+    },
+    "optical-flow": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/motion/optical-flow-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "depth-estimation": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/spatial/depth-estimation-mcp/server.py"
+      ],
+      "env": {
+        "DEPTH_MODEL": "depth-anything/Depth-Anything-V2-Small-hf",
+        "DEPTH_DEVICE": "cuda"
+      }
+    },
+    "video-segment-extract": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/video-segment-extract-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "audio-extract": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/audio-extract-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "spatial-crop": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/spatial-crop-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "interaction-recognition": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/interaction-recognition-mcp/server.py"
+      ],
+      "env": {
+        "DINOX_API_KEY": "YOUR_DINOX_API_KEY",
+        "DINOX_API_BASE": "https://api.deepdataspace.com",
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash"
+      }
+    },
+    "audio-event-detection": {
+      "command": "./.venvs/audio/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/audio/audio-event-detection-mcp/server.py"
+      ],
+      "env": {
+        "PANNS_CHECKPOINT": "models/Cnn14_mAP=0.431.pth"
+      }
+    },
+    "active-speaker-detection": {
+      "command": "./.venvs/audio/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/active-speaker-detection-mcp/server.py"
+      ],
+      "env": {
+        "INSIGHTFACE_MODEL": "buffalo_l",
+        "INSIGHTFACE_PROVIDERS": "CUDAExecutionProvider,CPUExecutionProvider"
+      }
+    },
+    "emotion-analysis": {
+      "command": "./.venvs/audio/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/emotion-analysis-mcp/server.py"
+      ],
+      "env": {
+        "FER_MODEL": "trpakov/vit-face-expression",
+        "SER_MODEL": "speechbrain/emotion-recognition-wav2vec2-IEMOCAP",
+        "EMOTION_DEVICE": "cuda",
+        "INSIGHTFACE_MODEL": "buffalo_l",
+        "INSIGHTFACE_PROVIDERS": "CUDAExecutionProvider,CPUExecutionProvider",
+        "FER_FUSION_WEIGHT": "0.6"
+      }
+    },
+    "music-identification": {
+      "command": "./.venvs/music/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/audio/music-identification-mcp/server.py"
+      ],
+      "env": {
+        "ACOUSTID_API_KEY": "YOUR_ACOUSTID_API_KEY"
+      }
+    },
+    "moment-retrieval": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/temporal/moment-retrieval-mcp/server.py"
+      ],
+      "env": {
+        "CLIP_MODEL": "openai/clip-vit-base-patch32"
+      }
+    },
+    "gaze-estimation": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/gaze-estimation-mcp/server.py"
+      ],
+      "env": {
+        "L2CS_WEIGHTS": "models/L2CSNet_gaze360.pkl",
+        "GAZE_DEVICE": "cuda",
+        "INSIGHTFACE_MODEL": "buffalo_l",
+        "INSIGHTFACE_PROVIDERS": "CUDAExecutionProvider,CPUExecutionProvider"
+      }
+    },
+    "scene-change": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/temporal/scene-change-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "temporal-ground": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/temporal/temporal-ground-mcp/server.py"
+      ],
+      "env": {
+        "SBERT_MODEL": "sentence-transformers/all-MiniLM-L6-v2"
+      }
+    },
+    "spatial-calc": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/spatial/spatial-calc-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "face-cluster": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/face-cluster-mcp/server.py"
+      ],
+      "env": {
+        "INSIGHTFACE_MODEL": "buffalo_l",
+        "INSIGHTFACE_PROVIDERS": "CUDAExecutionProvider,CPUExecutionProvider"
+      }
+    },
+    "action-classify": {
+      "command": "./.venvs/vision/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/action-classify-mcp/server.py"
+      ],
+      "env": {
+        "VIDEOMAE_MODEL": "MCG-NJU/videomae-base-finetuned-kinetics"
+      }
+    },
+    "frame-diff": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/motion/frame-diff-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "vlm-query-sequence": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/vlm-query-sequence-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash",
+        "VLM_MODEL_FALLBACKS": "gpt-4.1,qwen2.5-vl-72b-instruct,qwen3-vl-plus,qwen-vl-max"
+      }
+    },
+    "speed-estimation": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/motion/speed-estimation-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "youtube-cache": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/youtube-cache-mcp/server.py"
+      ],
+      "env": {
+        "DENO_INSTALL": "~/.deno",
+        "PATH": "./.venvs/base/bin:~/.deno/bin:/usr/local/bin:/usr/bin:/bin",
+        "HTTP_PROXY": "",
+        "HTTPS_PROXY": ""
+      }
+    },
+    "attribute-recognition": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/attribute-recognition-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash",
+        "VLM_MODEL_FALLBACKS": "gpt-4.1,qwen2.5-vl-72b-instruct,qwen3-vl-plus,qwen-vl-max"
+      }
+    },
+    "person-identification": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/vision/person-identification-mcp/server.py"
+      ],
+      "env": {
+        "VLM_API_URL": "https://your-llm-provider.example/v1",
+        "VLM_MODEL_NAME": "Qwen3.8-Flash",
+        "VLM_MODEL_FALLBACKS": "gpt-4.1,qwen2.5-vl-72b-instruct,qwen3-vl-plus,qwen-vl-max"
+      }
+    },
+    "thumbnail-navigator": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/thumbnail-navigator-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "camera-motion": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/motion/camera-motion-mcp/server.py"
+      ],
+      "env": {}
+    },
+    "concat-images": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/concat-images-mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "video-duration": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/media/video-duration-mcp/server.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "MCP_ALLOW_MODEL_DOWNLOAD": "0"
+      }
+    },
+    "scene-query": {
+      "command": "./.venvs/base/bin/python",
+      "args": [
+        "./scripts/mcp_runtime.py",
+        "./tools/composite/scene-query-mcp/server.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "MCP_ALLOW_MODEL_DOWNLOAD": "0"
+      }
+    }
+  }
+}
