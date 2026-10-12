@@ -1,0 +1,186 @@
+# Audio Tools - Audio transcription, speaker diarization, event detection, music ID
+
+transcribe_audio:
+  description: |
+    Transcribe speech from an audio or video file using WhisperX. Returns word-level
+    timestamps, speaker-aligned segments, and full transcript text.
+    Returned segment and word timestamps are in seconds from the start of the
+    original input file, including when a start_time/end_time interval is used.
+    Words without an aligned start or end time retain null for that endpoint.
+    Best for: speech-to-text, creating subtitles, understanding spoken content.
+    Supports formats: wav, mp3, m4a, flac, ogg, mp4, mov, avi, mkv, webm.
+  backend: whisperx
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the audio/video file"
+      language:
+        type: string
+        description: "Language code (e.g. 'en', 'zh', 'ja'). Auto-detect if omitted."
+      model_size:
+        type: string
+        description: "Optional WhisperX model override. Omit to use the server's WHISPERX_MODEL_SIZE setting."
+      compute_type:
+        type: string
+        description: "Optional precision override (e.g. int8, float16, float32). Omit to use WHISPERX_COMPUTE_TYPE. CPU execution uses int8."
+      start_time:
+        type: number
+        description: "Start time in seconds (optional)"
+      end_time:
+        type: number
+        description: "End time in seconds (optional)"
+    required:
+      - file_path
+
+clear_whisperx_cache:
+  description: |
+    Clear WhisperX model cache to free GPU memory.
+  backend: whisperx
+  media_type: none
+  input_schema:
+    type: object
+    properties: {}
+
+speaker_diarize:
+  description: |
+    Identify and separate different speakers in an audio or video file.
+    Returns speaker-labeled time segments with start/end times.
+    Best for: identifying who speaks when in multi-speaker recordings,
+    interviews, meetings.
+  backend: pyannote
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the audio/video file"
+      num_speakers:
+        type: integer
+        description: "Expected number of speakers (optional, auto-detect if omitted)"
+      min_speakers:
+        type: integer
+        description: "Minimum number of speakers (optional)"
+      max_speakers:
+        type: integer
+        description: "Maximum number of speakers (optional)"
+    required:
+      - file_path
+
+detect_audio_events:
+  description: |
+    Detect and classify audio events (e.g. speech, music, laughter, applause, gunshot,
+    dog bark, etc.) in an audio or video file using PANNs (Pretrained Audio Neural Networks).
+    Returns detected events with timestamps and confidence scores.
+  backend: panns
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the audio/video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: file end)"
+      top_k:
+        type: integer
+        description: "Number of top events per segment (default 10)"
+        default: 10
+      min_confidence:
+        type: number
+        description: "Minimum confidence threshold (default 0.1)"
+        default: 0.1
+      include_speech:
+        type: boolean
+        description: "Include speech-related events (default false)"
+        default: false
+    required:
+      - file_path
+
+detect_audio_event_timeline:
+  description: |
+    Generate a timeline of audio events across a recording. Segments the audio and
+    classifies events in each segment, producing a chronological event log.
+    Best for: understanding audio content over time, finding when specific sounds occur.
+  backend: panns
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the audio/video file"
+      time_resolution:
+        type: number
+        description: "Duration of each analysis segment in seconds (default 2.0)"
+        default: 2.0
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: file end)"
+      top_k_per_segment:
+        type: integer
+        description: "Top events per segment (default 5)"
+        default: 5
+      min_confidence:
+        type: number
+        description: "Minimum confidence (default 0.2)"
+        default: 0.2
+      include_speech:
+        type: boolean
+        description: "Include speech-related events (default false)"
+        default: false
+    required:
+      - file_path
+
+identify_music:
+  description: |
+    Identify a music track from an audio or video file using audio fingerprinting
+    (Shazam-like). Returns song title, artist, album, and match confidence.
+    Best for: identifying background music, theme songs, soundtrack analysis.
+  backend: shazamio
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the audio/video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (optional)"
+      end_time:
+        type: number
+        description: "End time in seconds (optional)"
+    required:
+      - file_path
+
+compare_audio_fingerprint:
+  description: |
+    Compare two audio files to determine if they contain the same music/audio content.
+    Uses audio fingerprinting for robust matching.
+  backend: shazamio
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_a:
+        type: string
+        description: "Absolute path to the first audio/video file"
+      file_b:
+        type: string
+        description: "Absolute path to the second audio/video file"
+    required:
+      - file_a
+      - file_b

@@ -1,0 +1,144 @@
+# Segment Tools - Instance segmentation and object tracking
+
+# NOTE: instance_segment is defined in grounding_dino.yaml (canonical). Do not duplicate here.
+
+auto_segment:
+  description: |
+    Automatically segment an entire image into all distinct regions/objects without any prompt.
+    Best for: Counting objects in a scene, discovering all visible items, overview analysis.
+    Returns each region's area, bounding box, center, IoU score, and area ratio.
+  backend: sam
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      points_per_side:
+        type: integer
+        description: "Grid sampling density (higher = more fine-grained but slower), default 32"
+        default: 32
+      min_mask_area:
+        type: integer
+        description: "Minimum mask area in pixels to filter noise, default 100"
+        default: 100
+      pred_iou_thresh:
+        type: number
+        description: "Predicted IoU threshold (0-1), default 0.86"
+        default: 0.86
+    required:
+      - image_path
+
+prompt_segment:
+  description: |
+    Segment a specific object in an image using point and/or box prompts.
+    Best for: Isolating a known object for attribute analysis (color, size),
+    verifying object existence at a location, precise region extraction.
+    Returns mask area, bbox, center, color analysis (mean RGB & dominant color name), and IoU score.
+  backend: sam
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      point_coords:
+        type: string
+        description: 'Point prompts as JSON array, e.g. "[[200,150],[300,200]]"'
+      point_labels:
+        type: string
+        description: 'Point labels as JSON array (1=foreground, 0=background), e.g. "[1,0]"'
+      box:
+        type: string
+        description: 'Bounding box prompt as JSON array "[x1,y1,x2,y2]"'
+      multimask_output:
+        type: boolean
+        description: "Whether to return multiple candidate masks (up to 3), default true"
+        default: true
+    required:
+      - image_path
+
+tracked_object_count:
+  description: |
+    Count unique objects of a specific category in a video segment by tracking across frames.
+    Uses DINO-X for initial detection + SAM2 VideoPredictor for tracking.
+    Same object appearing in multiple frames is counted only once.
+    Best for: Counting Problem -- 'How many distinct X appear in the video?'.
+    Returns unique_object_count with per-object timeline and appearance stats.
+
+    IMPORTANT CONSTRAINTS:
+    - MUST specify target_category (e.g., 'person', 'car', 'laptop')
+    - MUST specify a SHORT time segment (max 60s recommended, hard limit 60s)
+    - Objects are detected in the FIRST frame and tracked forward
+    - If objects appear later in the segment, try adjusting start_time
+  backend: sam2
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Analysis start time (seconds)"
+      end_time:
+        type: number
+        description: "Analysis end time (seconds). Keep segment <= 30s recommended, max 60s"
+      target_category:
+        type: string
+        description: "REQUIRED: target type to count (e.g., 'person', 'car', 'laptop')"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate (fps), default 0.5"
+        default: 0.5
+      min_track_frames:
+        type: integer
+        description: "Min frames an object must appear to be counted, default 2"
+        default: 2
+    required:
+      - video_path
+      - start_time
+      - end_time
+      - target_category
+
+object_track:
+  description: |
+    Track a specific object across video frames using SAM2.
+    Provide an initial point or box prompt on a reference frame, and the model
+    propagates the segmentation forward and backward.
+    Best for: Tracking a person/object through a video, determining when an object appears/disappears.
+    Returns per-frame trajectory with bbox, center, area, and visibility.
+  backend: sam2
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      init_frame_time:
+        type: number
+        description: "Time (seconds) of the frame to place the initial prompt"
+      init_points:
+        type: string
+        description: 'Point prompts as JSON array, e.g. "[[200,150]]"'
+      init_box:
+        type: string
+        description: 'Box prompt as JSON array "[x1,y1,x2,y2]"'
+      start_time:
+        type: number
+        description: "Tracking start time (seconds), default 0"
+        default: 0
+      end_time:
+        type: number
+        description: "Tracking end time (seconds), default video end"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate (fps), default 2"
+        default: 2
+    required:
+      - video_path
+      - init_frame_time

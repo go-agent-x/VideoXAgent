@@ -1,0 +1,209 @@
+# Grounding DINO Tools — Local open-set object detection (GroundingDINO-B)
+
+detect:
+  description: |
+    Detect whether specific object categories exist in a single image.
+    Best for: Object Recognition (e.g. 'is there a dog in the image?').
+    Returns per-category existence map, object list, and summary.
+  backend: grounding-dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: Absolute path to the image file or URL
+      categories:
+        type: string
+        description: Categories separated by '.', e.g. 'apple.dog.car'
+      box_threshold:
+        type: number
+        description: Confidence threshold (0-1), default 0.25
+        default: 0.25
+    required:
+      - image_path
+      - categories
+  output_format:
+    type: object
+    properties:
+      success: { type: boolean }
+      detected_categories: { type: object }
+      object_count: { type: integer }
+      objects:
+        type: array
+        items:
+          type: object
+          properties:
+            category: { type: string }
+            bbox: { type: array, items: { type: number } }
+            score: { type: number }
+      summary: { type: string }
+      image_path: { type: string }
+
+locate:
+  description: |
+    Locate objects in an image using a natural language phrase description.
+    Best for: Complex referring expressions (e.g. 'the red car on the left', 'person wearing blue').
+    Returns matching bounding boxes and confidence scores.
+  backend: grounding-dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: Absolute path to the image file or URL
+      phrase:
+        type: string
+        description: Natural language description of the target, e.g. 'the red car on the left'
+      box_threshold:
+        type: number
+        description: Confidence threshold (0-1), default 0.2
+        default: 0.2
+    required:
+      - image_path
+      - phrase
+  output_format:
+    type: object
+    properties:
+      success: { type: boolean }
+      phrase: { type: string }
+      matched: { type: boolean }
+      best_match: { type: object }
+      all_matches: { type: array }
+      match_count: { type: integer }
+      image_path: { type: string }
+
+scene_scan:
+  description: |
+    Scan an image using text-prompted object categories with local Grounding DINO.
+    By default, scans 48 common categories; detections are limited to the scanned vocabulary.
+    Best for: Scene understanding when categories are unknown.
+    Returns category counts, full object list, and scene summary.
+  backend: grounding-dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: Absolute path to the image file or URL
+      box_threshold:
+        type: number
+        description: Confidence threshold (0-1), default 0.25
+        default: 0.25
+      max_objects:
+        type: integer
+        description: Max objects to return, default 50
+        default: 50
+        minimum: 1
+        maximum: 50
+      categories:
+        type: array
+        minItems: 1
+        maxItems: 64
+        items:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description: "Optional category phrases (at most 8 words each). Multiword names such as traffic light remain one category."
+    required:
+      - image_path
+  output_format:
+    type: object
+    properties:
+      success: { type: boolean }
+      total_objects: { type: integer }
+      category_counts: { type: object }
+      objects: { type: array }
+      scene_summary: { type: string }
+      detection_mode: { type: string }
+      image_path: { type: string }
+
+count:
+  description: |
+    Precisely count objects of a specific category in a single image with NMS deduplication.
+    Best for: Counting Problem (e.g. 'how many people/cars/chairs?').
+    Returns exact count, per-object bounding boxes, and average confidence.
+  backend: grounding-dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: Absolute path to the image file or URL
+      target_category:
+        type: string
+        description: Category to count, e.g. 'person', 'car', 'chair'
+      box_threshold:
+        type: number
+        description: Confidence threshold (0-1), default 0.25
+        default: 0.25
+      nms_threshold:
+        type: number
+        description: NMS IoU threshold for dedup (0-1), default 0.5
+        default: 0.5
+    required:
+      - image_path
+      - target_category
+  output_format:
+    type: object
+    properties:
+      success: { type: boolean }
+      count: { type: integer }
+      objects: { type: array }
+      confidence_summary: { type: string }
+
+instance_segment:
+  description: |
+    Detect objects and analyze their size (bounding box area) for comparison.
+    Best for: Attribute Perception involving size comparison, relative scale.
+    Returns per-object area, width/height, relative size label, and size ranking.
+  backend: grounding-dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file or URL"
+      categories:
+        type: string
+        description: "Categories separated by '.', e.g. 'car.person'"
+      box_threshold:
+        type: number
+        description: "Confidence threshold (0-1), default 0.25"
+        default: 0.25
+    required:
+      - image_path
+      - categories
+
+spatial_relation:
+  description: |
+    Detect two objects in an image and automatically compute their spatial relationship.
+    Combines detection + geometric computation. Returns detection results and
+    full spatial analysis. Best for: end-to-end 'what is the spatial relationship
+    between the car and the person?' without manual bbox extraction.
+  backend: grounding-dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      object_a:
+        type: string
+        description: "Description of the first object"
+      object_b:
+        type: string
+        description: "Description of the second object"
+      box_threshold:
+        type: number
+        description: "Detection confidence threshold (0-1), default 0.2"
+        default: 0.2
+    required:
+      - image_path
+      - object_a
+      - object_b

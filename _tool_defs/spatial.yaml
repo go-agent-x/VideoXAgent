@@ -1,0 +1,179 @@
+# Spatial Tools - Spatial analysis and relationship computation
+
+calc_bbox_relation:
+  description: |
+    Calculate the full spatial relationship between two bounding boxes using pure geometry (no API).
+    Returns: containment (inside/overlap/none), 8-direction compass, 4-direction, IoU, overlap ratios,
+    center distance, edge distance, proximity label, relative size.
+    Best for: precise 'is A left/right/above/below of B?', 'is A inside B?', 'how far apart?'.
+    Use with detect/count output coordinates.
+  backend: script
+  media_type: none
+  input_schema:
+    type: object
+    properties:
+      bbox_a:
+        type: array
+        items:
+          type: number
+        description: "Object A bounding box [x1, y1, x2, y2] in pixels"
+      bbox_b:
+        type: array
+        items:
+          type: number
+        description: "Object B bounding box [x1, y1, x2, y2] in pixels"
+      label_a:
+        type: string
+        description: "Label for object A"
+        default: "A"
+      label_b:
+        type: string
+        description: "Label for object B"
+        default: "B"
+      image_width:
+        type: number
+        description: "Image width in pixels (optional)"
+        default: 0
+      image_height:
+        type: number
+        description: "Image height in pixels (optional)"
+        default: 0
+    required:
+      - bbox_a
+      - bbox_b
+
+calc_point_in_region:
+  description: |
+    Test whether a point or bbox center is inside a polygon region using ray-casting algorithm.
+    Returns: inside/outside status, distance to nearest boundary edge, region area.
+    Best for: 'is the player inside the three-point line?', 'is the object within the marked zone?'.
+  backend: script
+  media_type: none
+  input_schema:
+    type: object
+    properties:
+      point:
+        type: array
+        items:
+          type: number
+        description: "Point [x,y] or bbox [x1,y1,x2,y2] (center will be used)"
+      region:
+        type: array
+        items:
+          type: array
+          items:
+            type: number
+        description: "Polygon vertices [[x1,y1],[x2,y2],...] (at least 3 points)"
+      label_point:
+        type: string
+        description: "Label for the point/object"
+        default: "point"
+      label_region:
+        type: string
+        description: "Label for the region"
+        default: "region"
+    required:
+      - point
+      - region
+
+calc_multi_spatial:
+  description: |
+    Batch spatial analysis: compute direction, distance, and overlap of multiple objects
+    relative to one reference object. Returns per-object 8-direction, distance, containment,
+    spatial map, directional grouping, nearest/farthest ranking.
+    Best for: 'where are the 4 players relative to the referee?', 'which object is closest to X?'.
+  backend: script
+  media_type: none
+  input_schema:
+    type: object
+    properties:
+      objects:
+        type: array
+        items:
+          type: object
+          properties:
+            bbox:
+              type: array
+              items:
+                type: number
+              description: "[x1,y1,x2,y2]"
+            label:
+              type: string
+              description: "Object label"
+        description: "List of objects with bbox and label"
+      reference_object:
+        type: object
+        properties:
+          bbox:
+            type: array
+            items:
+              type: number
+          label:
+            type: string
+        description: "Reference object. If omitted, first object in list is used."
+      image_width:
+        type: number
+        description: "Image width in pixels (optional)"
+        default: 0
+      image_height:
+        type: number
+        description: "Image height in pixels (optional)"
+        default: 0
+    required:
+      - objects
+
+# NOTE: spatial_relation is defined in grounding_dino.yaml (canonical). Do not duplicate here.
+
+spatial_crop:
+  description: |
+    Crop a specific region from an image based on bbox coordinates and save as a new image.
+    Best for: extracting a detected object for closer analysis, feeding a sub-region
+    to VLM or OCR tools.
+  backend: script
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      bbox:
+        type: array
+        items:
+          type: number
+        description: "Crop region [x1, y1, x2, y2] in pixels"
+      padding:
+        type: number
+        description: "Extra pixels around bbox, default 0"
+        default: 0
+      output_name:
+        type: string
+        description: "Output file name (optional)"
+        default: ""
+    required:
+      - image_path
+      - bbox
+
+spatial_analyze:
+  description: |
+    Detect all objects of given categories and produce a comprehensive spatial layout analysis.
+    Combines Grounding DINO detection + spatial computation to describe overall scene layout.
+    Returns per-object positions, pairwise relationships, and a spatial summary.
+  backend: grounding_dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      categories:
+        type: string
+        description: "Categories separated by '.', e.g. 'person.car.tree'"
+      box_threshold:
+        type: number
+        description: "Detection confidence threshold (0-1), default 0.25"
+        default: 0.25
+    required:
+      - image_path
+      - categories

@@ -1,0 +1,156 @@
+# Temporal Tools - Temporal analysis and event localization
+
+locate_event_by_text:
+  description: |
+    Locate when a specific event or topic occurs in a video by semantically matching
+    a text query against the video's SRT subtitle file. Returns ranked time segments
+    where the queried event is most likely discussed.
+    Best for: Temporal Reasoning ('when does X happen?'), finding specific discussions.
+    Requires SRT subtitle file.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      query:
+        type: string
+        description: "Natural language description of the event to locate"
+      video_path:
+        type: string
+        description: "Video file path for auto-locating matching SRT file"
+      srt_path:
+        type: string
+        description: "Direct path to SRT subtitle file (overrides auto-discovery)"
+      subtitle_dir:
+        type: string
+        description: "Directory containing SRT files (for auto-discovery)"
+      top_k:
+        type: integer
+        description: "Max number of matched segments to return (default 5)"
+        default: 5
+      min_score:
+        type: number
+        description: "Minimum similarity score threshold (default 0.1)"
+        default: 0.1
+      merge_gap:
+        type: number
+        description: "Merge adjacent segments within this gap in seconds (default 2.0)"
+        default: 2.0
+      start_time:
+        type: number
+        description: "Restrict search to after this time (seconds)"
+      end_time:
+        type: number
+        description: "Restrict search to before this time (seconds)"
+    required:
+      - query
+
+locate_event_by_scene_caption:
+  description: |
+    Locate when a specific event occurs by matching a text query against pre-computed
+    video caption descriptions. Use when no SRT subtitle file is available -- first call
+    caption_video_scenes to generate descriptions, then pass those captions here.
+    Best for: videos without subtitles, visual event localization.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      query:
+        type: string
+        description: "Natural language description of the event to locate"
+      captions:
+        type: array
+        description: "List of caption segments from caption_video_scenes tool"
+        items:
+          type: object
+          properties:
+            start_time:
+              type: number
+            end_time:
+              type: number
+            caption:
+              type: string
+          required: ["start_time", "end_time", "caption"]
+      top_k:
+        type: integer
+        description: "Max matched segments (default 5)"
+        default: 5
+      min_score:
+        type: number
+        description: "Minimum similarity threshold (default 0.1)"
+        default: 0.1
+    required:
+      - query
+      - captions
+
+moment_retrieve:
+  description: |
+    Locate video moments matching a natural language query via visual feature matching.
+    Unlike temporal-ground (subtitle/caption matching), this tool directly matches the
+    query against video frame features using CLIP + Moment-DETR, requiring no subtitles
+    or pre-computed descriptions.
+  backend: clip
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      query:
+        type: string
+        description: "Natural language description of the moment to find"
+      top_k:
+        type: integer
+        description: "Number of top moments to return"
+        default: 5
+      threshold:
+        type: number
+        description: "Minimum confidence threshold"
+        default: 0.3
+      start_time:
+        type: number
+        description: "Start of search range in seconds"
+        default: 0
+      end_time:
+        type: number
+        description: "End of search range (defaults to video end)"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate for CLIP feature extraction"
+        default: 2.0
+    required:
+      - video_path
+      - query
+
+scene_change_detect:
+  description: |
+    Detect scene changes (shot boundaries) in a video using visual difference analysis.
+    Returns timestamps where significant visual transitions occur.
+    Best for: finding shot boundaries, scene cuts, transition points.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      threshold:
+        type: number
+        description: "Scene change detection threshold (default 27.0, higher = fewer detections)"
+        default: 27.0
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      max_scenes:
+        type: integer
+        description: "Maximum number of scenes to return (default 100). When raw detections exceed this, adjacent short scenes are merged. Use smaller values for long/fast-cut videos."
+        default: 100
+    required:
+      - video_path

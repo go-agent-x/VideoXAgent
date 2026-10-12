@@ -1,0 +1,347 @@
+# Misc Tools - Frame diff, motion analysis, speed estimation, optical flow, depth
+
+diff_two_frames:
+  description: |
+    Compare two image frames and compute visual differences. Returns pixel-level
+    difference metrics, changed regions, and a difference visualization.
+    Best for: detecting changes between two time points, before/after comparison.
+  backend: script
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path_a:
+        type: string
+        description: "Absolute path to the first image"
+      image_path_b:
+        type: string
+        description: "Absolute path to the second image"
+      ssim_threshold:
+        type: number
+        description: "SSIM difference threshold (0-1), default 0.6"
+        default: 0.6
+      min_region_area:
+        type: integer
+        description: "Minimum region area in pixels to report, default 100"
+        default: 100
+    required:
+      - image_path_a
+      - image_path_b
+
+diff_video_timestamps:
+  description: |
+    Extract frames at two timestamps from a video and compute their visual difference.
+    Combines frame extraction + diff comparison in one call.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      time_a:
+        type: number
+        description: "First timestamp in seconds"
+      time_b:
+        type: number
+        description: "Second timestamp in seconds"
+      ssim_threshold:
+        type: number
+        description: "SSIM difference threshold (0-1), default 0.6"
+        default: 0.6
+      min_region_area:
+        type: integer
+        description: "Minimum region area in pixels, default 100"
+        default: 100
+    required:
+      - video_path
+      - time_a
+      - time_b
+
+motion_analyze:
+  description: |
+    Analyze motion patterns in a video segment using SAM2-based tracking.
+    Provide an initial point or box prompt on a reference frame to select
+    the object to track. Returns motion trajectories and movement summaries.
+  backend: sam2
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      init_frame_time:
+        type: number
+        description: "Time (seconds) of the frame to place the initial prompt"
+      init_points:
+        type: string
+        description: 'Point prompts as JSON array, e.g. "[[200,150]]"'
+      init_box:
+        type: string
+        description: 'Box prompt as JSON array "[x1,y1,x2,y2]"'
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate (default 3)"
+        default: 3
+    required:
+      - video_path
+      - init_frame_time
+
+speed_estimate:
+  description: |
+    Estimate the speed of a tracked object from its trajectory coordinates.
+    Takes a sequence of per-frame bounding box positions (trajectory), the video FPS,
+    and an optional reference length for real-world speed estimation.
+  backend: script
+  media_type: none
+  input_schema:
+    type: object
+    properties:
+      trajectory:
+        type: array
+        description: "List of per-frame bounding boxes [[x1,y1,x2,y2], ...] or centers [[cx,cy], ...]"
+        items:
+          type: array
+          items:
+            type: number
+      fps:
+        type: number
+        description: "Video frame rate (frames per second)"
+      known_speed:
+        type: string
+        description: "Known speed string with unit, e.g. '133km/h', '60mph', '36.9m/s' (optional, for calibration)"
+      reference_length_px:
+        type: number
+        description: "Reference length in pixels (optional)"
+      reference_length_m:
+        type: number
+        description: "Reference length in meters (optional)"
+      frame_width:
+        type: integer
+        description: "Video frame width in pixels (optional, for resolution-independent motion classification)"
+      frame_height:
+        type: integer
+        description: "Video frame height in pixels (optional, for resolution-independent motion classification)"
+    required:
+      - trajectory
+      - fps
+
+compute_dense_flow:
+  description: |
+    Compute dense optical flow between two video frames at specified timestamps.
+    Returns flow magnitude/direction statistics and optional visualization.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      time_a:
+        type: number
+        description: "First timestamp in seconds"
+      time_b:
+        type: number
+        description: "Second timestamp in seconds"
+      max_resolution:
+        type: integer
+        description: "Max resolution for processing (default 520)"
+        default: 520
+    required:
+      - video_path
+      - time_a
+      - time_b
+
+analyze_flow_segment:
+  description: |
+    Analyze optical flow patterns across a video segment. Computes flow between
+    consecutive sampled frames and aggregates motion statistics.
+    Best for: detecting camera motion, identifying moving regions.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate (default 2)"
+        default: 2
+      roi:
+        type: array
+        items:
+          type: number
+        description: "Optional region of interest [x1,y1,x2,y2]"
+    required:
+      - video_path
+
+estimate_depth:
+  description: |
+    Estimate per-pixel depth from a single image using a monocular depth estimation model.
+    Returns a depth map with relative depth values and optional visualization.
+  backend: transformers
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      save_visualization:
+        type: boolean
+        description: "Whether to save depth visualization image (default true)"
+        default: true
+      num_zones:
+        type: integer
+        description: "Number of depth zones (default 3)"
+        default: 3
+    required:
+      - image_path
+
+compare_object_depth:
+  description: |
+    Compare the relative depth (distance from camera) of two bounding box regions.
+    Estimates depth and determines which region is closer/farther.
+  backend: transformers
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      bbox_a:
+        type: array
+        items:
+          type: number
+        description: "First object bounding box [x1,y1,x2,y2]"
+      bbox_b:
+        type: array
+        items:
+          type: number
+        description: "Second object bounding box [x1,y1,x2,y2]"
+      label_a:
+        type: string
+        description: "Label for first object"
+        default: "A"
+      label_b:
+        type: string
+        description: "Label for second object"
+        default: "B"
+    required:
+      - image_path
+      - bbox_a
+      - bbox_b
+
+get_depth_at_points:
+  description: |
+    Get depth values at specific pixel coordinates in an image.
+    Estimates depth map and samples values at the given points.
+  backend: transformers
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      points:
+        type: array
+        items:
+          type: array
+          items:
+            type: number
+        description: "List of [x, y] pixel coordinates"
+      labels:
+        type: array
+        items:
+          type: string
+        description: "Optional labels for each point"
+      radius:
+        type: integer
+        description: "Radius around each point for averaging (default 5)"
+        default: 5
+    required:
+      - image_path
+      - points
+
+analyze_camera_motion:
+  description: |
+    Analyze camera motion patterns across a video segment. Detects and classifies
+    camera movement events including pan (left/right), tilt (up/down), zoom (in/out),
+    static, and tracking shots. Uses dense optical flow (Farneback) for motion analysis.
+    Best for: understanding cinematographic techniques, detecting camera behavior,
+    analyzing shot composition and movement patterns.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate for analysis (default 2.0)"
+        default: 2.0
+      motion_threshold:
+        type: number
+        description: "Motion magnitude threshold for static detection (default 5.0 pixels/frame)"
+        default: 5.0
+    required:
+      - video_path
+
+detect_camera_motion_type:
+  description: |
+    Detect the primary camera motion type between two specific timestamps.
+    A lightweight version of analyze_camera_motion for quick single-pair analysis.
+    Returns motion type (static, pan_left, pan_right, tilt_up, tilt_down,
+    zoom_in, zoom_out, tracking, complex) with confidence score.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      time_a:
+        type: number
+        description: "First timestamp in seconds"
+      time_b:
+        type: number
+        description: "Second timestamp in seconds"
+      motion_threshold:
+        type: number
+        description: "Motion magnitude threshold for static detection (default 5.0)"
+        default: 5.0
+    required:
+      - video_path
+      - time_a
+      - time_b

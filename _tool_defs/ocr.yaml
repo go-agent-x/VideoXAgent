@@ -1,0 +1,141 @@
+# OCR Tools - Text detection and recognition
+
+ocr_frame_text:
+  description: |
+    Detect and recognize ALL text in an image using PaddleOCR.
+    Returns each text region with content, bounding box coordinates, confidence score, and position label.
+    Best for: reading brand names, product labels, screen text, titles, captions, any on-screen text.
+    Use this when VLM-based captioning cannot accurately read small or dense text.
+  backend: script
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: Absolute path to the image file
+      lang:
+        type: string
+        description: "Recognition language: 'ch' for Chinese+English (default), 'en' for English only"
+        default: "ch"
+      det_thresh:
+        type: number
+        description: Detection confidence threshold (0-1), default 0.3
+        default: 0.3
+    required:
+      - image_path
+
+ocr_region_read:
+  description: |
+    Recognize text within a SPECIFIC bounding box region of an image.
+    Crops the specified area and runs OCR only on that region.
+    Best for: reading text on a specific object (jersey number, scoreboard, product label)
+    when you already know the region from grounding-dino detection results.
+    Typical chain: detect -> get bbox -> ocr_region_read.
+  backend: script
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: Absolute path to the image file
+      bbox:
+        type: array
+        items:
+          type: number
+        description: "Region to read text from: [x1, y1, x2, y2] in pixels"
+      lang:
+        type: string
+        description: "Recognition language: 'ch' or 'en'"
+        default: "ch"
+      padding:
+        type: number
+        description: Extra pixels around bbox to avoid clipping text edges, default 10
+        default: 10
+    required:
+      - image_path
+      - bbox
+
+ocr_table_extract:
+  description: |
+    Extract table structures from an image. Detects tables and returns structured
+    row/column data plus raw HTML.
+    Best for: reading data tables, comparison charts, scoreboards, leaderboards, product specs.
+    Provides deterministic structured output that VLMs often get wrong on specific numbers.
+  backend: script
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      lang:
+        type: string
+        description: "Recognition language: 'ch' or 'en'"
+        default: "ch"
+    required:
+      - image_path
+
+ocr_video_text_timeline:
+  description: |
+    Extract a timeline of on-screen text from video frames using PaddleOCR.
+    Samples frames at specified FPS, runs OCR on each frame, and deduplicates
+    text across frames to build a timeline of when each unique text first/last appears.
+    Best for: finding chapter titles, tracking score changes, identifying text overlays.
+    Complements subtitle tool: subtitles capture speech, this captures visual overlays.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds, default 0"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (omit to process until video end)"
+      sample_fps:
+        type: number
+        description: "Frames per second to sample (0.5~2 recommended), default 1"
+        default: 1
+      lang:
+        type: string
+        description: "Recognition language: 'ch' or 'en'"
+        default: "ch"
+      min_confidence:
+        type: number
+        description: "Minimum OCR confidence (0-1), default 0.6"
+        default: 0.6
+      similarity_threshold:
+        type: number
+        description: "Text similarity threshold for deduplication (0-1), default 0.8"
+        default: 0.8
+    required:
+      - video_path
+
+ocr_layout_analysis:
+  description: |
+    Analyze the layout structure of a document image using PaddleOCR's layout analysis pipeline.
+    Detects regions like titles, text blocks, tables, figures, headers, footers, etc.
+    Returns structured layout regions with type, bbox, content, and reading order.
+    Best for: understanding document structure, parsing slides/pages/forms.
+  backend: script
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      lang:
+        type: string
+        description: "Recognition language: 'ch' or 'en'"
+        default: "ch"
+    required:
+      - image_path

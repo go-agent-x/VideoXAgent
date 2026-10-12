@@ -1,0 +1,53 @@
+# Recognition Tools - Visual attribute and scene recognition
+
+attribute_recognition:
+  description: |
+    Classify visual attributes (color, material, state,
+    illumination, texture, shape, size, etc.) of objects or regions in an image using VLM.
+    Use when you need to determine properties of detected objects.
+    Optionally accepts bounding-box regions to focus analysis on specific areas.
+    If no regions are given, analyzes the whole image for the requested attributes.
+    Returns structured attribute annotations per region or for the full image.
+  backend: vlm
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file (jpg/png/bmp)"
+      attributes:
+        type: string
+        description: "Comma-separated list of attributes to recognize, e.g. 'color, material, state, illumination'"
+      regions:
+        type: string
+        description: "Optional JSON string: [{\"bbox\": [x1,y1,x2,y2], \"label\": \"object_name\"}]. If omitted, analyzes the whole image."
+    required:
+      - image_path
+      - attributes
+
+person_identification:
+  description: |
+    Identify and recognize specific individuals across one or more
+    images using VLM-based facial and body feature matching. Use when you need to determine
+    who appears in the images or verify whether the same person appears in different frames.
+    Optionally accepts bounding-box regions to focus on specific persons, and reference
+    identity names to match against. Supports up to 16 images per call.
+    NOTE: For pure face-embedding similarity, use face_match instead. This tool leverages
+    VLM for richer visual cues (clothing, hair, posture, accessories) beyond face geometry.
+  backend: vlm
+  media_type: image_list
+  input_schema:
+    type: object
+    properties:
+      image_paths:
+        type: string
+        description: "Comma-separated absolute paths to image files (max 16 images per call)"
+      regions:
+        type: string
+        description: "Optional JSON string: [{\"bbox\": [x1,y1,x2,y2], \"image_index\": 0}]. Focus analysis on specific person regions."
+      reference_identities:
+        type: string
+        description: "Optional comma-separated list of known identity names to match against, e.g. 'Alice, Bob, Charlie'"
+    required:
+      - image_paths

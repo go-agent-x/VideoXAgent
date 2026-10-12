@@ -1,0 +1,199 @@
+
+# VLM Query Tools - Vision Language Model based analysis
+
+query_scene_detail:
+  description: |
+    Answer a question about a specified video interval using uniformly sampled
+    frames and matching subtitles when available. Use sample_frames to control
+    the number of frames sent to the VLM.
+  backend: vlm
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        minimum: 0
+        description: "Start time in seconds"
+      end_time:
+        type: number
+        exclusiveMinimum: 0
+        description: "End time in seconds; must be greater than start_time"
+      query:
+        type: string
+        minLength: 1
+        description: "Question about this video interval"
+      sample_frames:
+        type: integer
+        default: 8
+        minimum: 1
+        maximum: 30
+        description: "Number of frames to sample uniformly"
+      subtitle_dir:
+        type: string
+        default: ""
+        description: "Optional directory containing matching subtitle files"
+    required: [video_path, start_time, end_time, query]
+
+segment_deep_query:
+  description: |
+    Answer a question about a specified video interval using sampled frames
+    enriched with object detection and OCR evidence when those backends are
+    available. Sends the frames and collected evidence to a VLM.
+  backend: vlm
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        minimum: 0
+        description: "Start time in seconds"
+      end_time:
+        type: number
+        exclusiveMinimum: 0
+        description: "End time in seconds; must be greater than start_time"
+      query:
+        type: string
+        minLength: 1
+        description: "Question to answer using the video frames and evidence"
+      detection_categories:
+        type: array
+        minItems: 1
+        maxItems: 64
+        items:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description: "Optional object category phrases, e.g. ['person', 'traffic light']. Each phrase is limited to 8 words. Omit to scan 48 common categories; an empty result does not imply an empty scene."
+      num_frames:
+        type: integer
+        default: 4
+        minimum: 1
+        maximum: 30
+        description: "Number of frames to sample uniformly"
+      max_tokens:
+        type: integer
+        minimum: 1
+        description: "Optional VLM output token budget; omit to use server configuration"
+    required: [video_path, start_time, end_time, query]
+
+inspect_image:
+  description: |
+    Ask a VLM about one provided image file.
+    The image may be an extracted video frame, a thumbnail grid, or a concat_images composite; 
+    set image_context when the image type is known so the VLM interprets it correctly.
+    Best for: still-image visual QA, checking one extracted frame, 
+    reviewing a thumbnail/contact-sheet grid, and verifying another tool's visual result.
+  backend: vlm
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file (jpg/png/bmp)"
+      query:
+        type: string
+        description: "Question or instruction about the image"
+      image_context:
+        type: string
+        default: "unknown"
+        enum: ["single_image", "composite_grid", "thumbnail_grid", "unknown"]
+        description: "Set when known: single_image for a normal image/frame, thumbnail_grid for generate_thumbnail_grid output, composite_grid for concat_images output, otherwise unknown."
+    required:
+      - image_path
+      - query
+
+query_segment_detail:
+  description: |
+    Ask a VLM about a video segment with specific start_time and end_time, and explicitly choose how to sample frames for the VLM, providing either num_frames or frame_timestamps.
+    Sends sampled video frames to the VLM, with optional matching SRT subtitles from subtitle_dir as text context.
+  backend: vlm
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      query:
+        type: string
+        description: "The question to ask the VLM about this interval"
+      start_time:
+        type: number
+        description: "Start time in seconds."
+      end_time:
+        type: number
+        description: "End time in seconds."
+      num_frames:
+        type: integer
+        minimum: 1
+        maximum: 32
+        description: "Number of frames to sample uniformly across [start_time, end_time]. decide count based on interval duration and query complexity)"
+      subtitle_dir:
+        type: string
+        default: ""
+        description: "SRT subtitle directory (optional). Provide when subtitles are available and relevant."
+      frame_timestamps:
+        type: array
+        maxItems: 32
+        items:
+          type: number
+          minimum: 0
+        description: "Advanced sampling control; use only when exact timestamps are already known. Overrides num_frames."
+    required:
+      - video_path
+      - query
+
+caption_video_scenes:
+  description: |
+    Generate scene-driven overview captions for an entire video.
+    Uses PySceneDetect shot boundaries (not fixed intervals), samples a few
+    frames per scene, aligns SRT subtitles when subtitle_dir is provided, and
+    returns scene captions with start/end timestamps.
+    Mode 1 (default): no custom_query for concise overview captions.
+    Mode 2: provide custom_query to answer the same scene-level question for
+    each scene, mainly for candidate discovery/filtering.
+    Returns scene captions with start/end timestamps for each detected scene.
+  backend: vlm
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      scene_threshold:
+        type: number
+        default: 27.0
+        minimum: 1
+        maximum: 100
+        description: "Scene detection sensitivity (higher = fewer scenes). Adjust based on video length: for short videos (<5min), use a higher threshold to avoid over-fragmentation into tiny meaningless clips; for long videos (>10min), a higher threshold (27-35) keeps scene count manageable."
+      subtitle_dir:
+        type: string
+        default: ""
+        description: "SRT subtitle directory (optional). Provide when subtitles are available and relevant."
+      custom_query:
+        type: string
+        default: ""
+        description: "Optional. Usually omit for Mode 1 overview. Provide only for Mode 2."
+      max_scenes:
+        type: integer
+        default: 30
+        minimum: 1
+        maximum: 100
+        description: "Maximum number of scenes to process (default 30). Scale with video length: short videos need fewer scenes (<=20), otherwise micro-scenes waste VLM calls and produce fragmented captions."
+      num_frames:
+        type: integer
+        minimum: 1
+        maximum: 5
+        description: "Number of frames per scene. If omitted, dynamic default: 1 per 5s, min 1, max 5."
+    required:
+      - video_path

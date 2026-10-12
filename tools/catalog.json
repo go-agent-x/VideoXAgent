@@ -1,0 +1,377 @@
+{
+  "version": 1,
+  "services": {
+    "youtube-cache": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/youtube-cache-mcp/server.py",
+      "tools": [
+        "get_video_from_youtube_id",
+        "check_youtube_cache"
+      ]
+    },
+    "video-duration": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/video-duration-mcp/server.py",
+      "tools": [
+        "get_video_duration",
+        "get_videos_duration"
+      ]
+    },
+    "frame-extract": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/frame-extract-mcp/server.py",
+      "tools": [
+        "extract_frame"
+      ]
+    },
+    "audio-extract": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/audio-extract-mcp/server.py",
+      "tools": [
+        "extract_audio"
+      ]
+    },
+    "video-segment-extract": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/video-segment-extract-mcp/server.py",
+      "tools": [
+        "extract_video_segment"
+      ]
+    },
+    "spatial-crop": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/spatial-crop-mcp/server.py",
+      "tools": [
+        "spatial_crop"
+      ]
+    },
+    "concat-images": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/concat-images-mcp/server.py",
+      "tools": [
+        "concat_images"
+      ]
+    },
+    "thumbnail-navigator": {
+      "category": "media",
+      "profile": "base",
+      "entrypoint": "tools/media/thumbnail-navigator-mcp/server.py",
+      "tools": [
+        "generate_thumbnail_grid"
+      ]
+    },
+    "inspect-image": {
+      "category": "vision",
+      "profile": "base",
+      "entrypoint": "tools/vision/inspect-image-mcp/server.py",
+      "tools": [
+        "inspect_image"
+      ]
+    },
+    "grounding-dino": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/grounding-dino-mcp/server.py",
+      "tools": [
+        "detect",
+        "count",
+        "scene_scan",
+        "locate",
+        "instance_segment",
+        "spatial_relation"
+      ]
+    },
+    "auto-segment": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/auto-segment-mcp/server.py",
+      "tools": [
+        "auto_segment"
+      ]
+    },
+    "prompt-segment": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/prompt-segment-mcp/server.py",
+      "tools": [
+        "prompt_segment"
+      ]
+    },
+    "object-track": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/object-track-mcp/server.py",
+      "tools": [
+        "object_track"
+      ]
+    },
+    "obj-count-sequence": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/obj-count-sequence-mcp/server.py",
+      "tools": [
+        "tracked_object_count"
+      ]
+    },
+    "attribute-recognition": {
+      "category": "vision",
+      "profile": "base",
+      "entrypoint": "tools/vision/attribute-recognition-mcp/server.py",
+      "tools": [
+        "attribute_recognition"
+      ]
+    },
+    "action-classify": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/action-classify-mcp/server.py",
+      "tools": [
+        "classify_action",
+        "classify_action_multi_segments"
+      ]
+    },
+    "face-cluster": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/face-cluster-mcp/server.py",
+      "tools": [
+        "face_detect",
+        "face_cluster_video",
+        "face_match"
+      ]
+    },
+    "person-identification": {
+      "category": "vision",
+      "profile": "base",
+      "entrypoint": "tools/vision/person-identification-mcp/server.py",
+      "tools": [
+        "person_identification"
+      ]
+    },
+    "gaze-estimation": {
+      "category": "vision",
+      "profile": "vision",
+      "entrypoint": "tools/vision/gaze-estimation-mcp/server.py",
+      "tools": [
+        "gaze_estimate"
+      ]
+    },
+    "audio-transcription": {
+      "category": "audio",
+      "profile": "audio",
+      "entrypoint": "tools/audio/audio-transcription-mcp/server.py",
+      "tools": [
+        "transcribe_audio",
+        "clear_whisperx_cache"
+      ]
+    },
+    "speaker-diarization": {
+      "category": "audio",
+      "profile": "audio",
+      "entrypoint": "tools/audio/speaker-diarization-mcp/server.py",
+      "tools": [
+        "speaker_diarize"
+      ]
+    },
+    "audio-event-detection": {
+      "category": "audio",
+      "profile": "audio",
+      "entrypoint": "tools/audio/audio-event-detection-mcp/server.py",
+      "tools": [
+        "detect_audio_events",
+        "detect_audio_event_timeline"
+      ]
+    },
+    "music-identification": {
+      "category": "audio",
+      "profile": "music",
+      "entrypoint": "tools/audio/music-identification-mcp/server.py",
+      "tools": [
+        "identify_music",
+        "compare_audio_fingerprint"
+      ]
+    },
+    "ocr": {
+      "category": "text",
+      "profile": "ocr",
+      "entrypoint": "tools/text/ocr-mcp/server.py",
+      "tools": [
+        "ocr_frame_text",
+        "ocr_region_read",
+        "ocr_table_extract",
+        "ocr_layout_analysis",
+        "ocr_video_text_timeline"
+      ]
+    },
+    "subtitle": {
+      "category": "text",
+      "profile": "base",
+      "entrypoint": "tools/text/subtitle-mcp/server.py",
+      "tools": [
+        "get_video_subtitle",
+        "get_multiple_videos_subtitle",
+        "check_subtitle_exists"
+      ]
+    },
+    "optical-flow": {
+      "category": "motion",
+      "profile": "vision",
+      "entrypoint": "tools/motion/optical-flow-mcp/server.py",
+      "tools": [
+        "compute_dense_flow",
+        "analyze_flow_segment"
+      ]
+    },
+    "frame-diff": {
+      "category": "motion",
+      "profile": "base",
+      "entrypoint": "tools/motion/frame-diff-mcp/server.py",
+      "tools": [
+        "diff_two_frames",
+        "diff_video_timestamps"
+      ]
+    },
+    "camera-motion": {
+      "category": "motion",
+      "profile": "base",
+      "entrypoint": "tools/motion/camera-motion-mcp/server.py",
+      "tools": [
+        "analyze_camera_motion",
+        "detect_camera_motion_type"
+      ]
+    },
+    "motion-analyze": {
+      "category": "motion",
+      "profile": "vision",
+      "entrypoint": "tools/motion/motion-analyze-mcp/server.py",
+      "tools": [
+        "motion_analyze"
+      ]
+    },
+    "speed-estimation": {
+      "category": "motion",
+      "profile": "base",
+      "entrypoint": "tools/motion/speed-estimation-mcp/server.py",
+      "tools": [
+        "speed_estimate"
+      ]
+    },
+    "spatial-calc": {
+      "category": "spatial",
+      "profile": "base",
+      "entrypoint": "tools/spatial/spatial-calc-mcp/server.py",
+      "tools": [
+        "calc_bbox_relation",
+        "calc_point_in_region",
+        "calc_multi_spatial"
+      ]
+    },
+    "spatial-analyze": {
+      "category": "spatial",
+      "profile": "vision",
+      "entrypoint": "tools/spatial/spatial-analyze-mcp/server.py",
+      "tools": [
+        "spatial_analyze"
+      ]
+    },
+    "depth-estimation": {
+      "category": "spatial",
+      "profile": "vision",
+      "entrypoint": "tools/spatial/depth-estimation-mcp/server.py",
+      "tools": [
+        "estimate_depth",
+        "compare_object_depth",
+        "get_depth_at_points"
+      ]
+    },
+    "scene-change": {
+      "category": "temporal",
+      "profile": "base",
+      "entrypoint": "tools/temporal/scene-change-mcp/server.py",
+      "tools": [
+        "scene_change_detect"
+      ]
+    },
+    "temporal-ground": {
+      "category": "temporal",
+      "profile": "vision",
+      "entrypoint": "tools/temporal/temporal-ground-mcp/server.py",
+      "tools": [
+        "locate_event_by_text"
+      ]
+    },
+    "moment-retrieval": {
+      "category": "temporal",
+      "profile": "vision",
+      "entrypoint": "tools/temporal/moment-retrieval-mcp/server.py",
+      "tools": [
+        "moment_retrieve"
+      ]
+    },
+    "emotion-analysis": {
+      "category": "composite",
+      "profile": "audio",
+      "entrypoint": "tools/composite/emotion-analysis-mcp/server.py",
+      "tools": [
+        "analyze_face_emotion",
+        "analyze_speech_emotion",
+        "analyze_multimodal_emotion"
+      ]
+    },
+    "active-speaker-detection": {
+      "category": "composite",
+      "profile": "audio",
+      "entrypoint": "tools/composite/active-speaker-detection-mcp/server.py",
+      "tools": [
+        "detect_active_speaker"
+      ]
+    },
+    "scene-query": {
+      "category": "composite",
+      "profile": "base",
+      "entrypoint": "tools/composite/scene-query-mcp/server.py",
+      "tools": [
+        "query_scene_detail"
+      ]
+    },
+    "scene-caption": {
+      "category": "composite",
+      "profile": "base",
+      "entrypoint": "tools/composite/scene-caption-mcp/server.py",
+      "tools": [
+        "caption_video_scenes"
+      ]
+    },
+    "segment-deep-query": {
+      "category": "composite",
+      "profile": "base",
+      "entrypoint": "tools/composite/segment-deep-query-mcp/server.py",
+      "tools": [
+        "segment_deep_query"
+      ]
+    },
+    "interaction-recognition": {
+      "category": "composite",
+      "profile": "vision",
+      "entrypoint": "tools/composite/interaction-recognition-mcp/server.py",
+      "tools": [
+        "recognize_interactions"
+      ]
+    },
+    "vlm-query-sequence": {
+      "category": "composite",
+      "profile": "base",
+      "entrypoint": "tools/composite/vlm-query-sequence-mcp/server.py",
+      "tools": [
+        "query_segment_detail"
+      ]
+    }
+  }
+}

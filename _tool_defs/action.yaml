@@ -1,0 +1,98 @@
+# Action Tools - Action classification and pose estimation
+
+classify_action:
+  description: |
+    Classify the dominant action/activity in a video segment. Returns top-K action labels
+    with confidence scores. When VideoMAE model is available, uses Kinetics-400 label set
+    (e.g. 'playing basketball', 'cooking', 'dancing'); otherwise falls back to motion
+    pattern analysis. Best for: Action Recognition tasks, determining what is happening
+    in a specific time window.
+  backend: transformers
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      top_k:
+        type: integer
+        description: "Number of top action labels to return (default 5)"
+        default: 5
+    required:
+      - video_path
+
+classify_action_multi_segments:
+  description: |
+    Classify actions across multiple video time segments simultaneously.
+    Returns action classification for each segment. Best for: 'what activities
+    happen in sequence?', 'compare actions in first half vs second half'.
+  backend: transformers
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      segments:
+        type: array
+        description: "List of time segments to classify"
+        items:
+          type: object
+          properties:
+            start_time:
+              type: number
+            end_time:
+              type: number
+            label:
+              type: string
+          required: ["start_time", "end_time"]
+      top_k:
+        type: integer
+        description: "Number of top action labels per segment (default 5)"
+        default: 5
+    required:
+      - video_path
+      - segments
+
+# NOTE: pose_estimate is defined in grounding_dino.yaml (canonical). Do not duplicate here.
+
+recognize_interactions:
+  description: |
+    Detect and classify interactions between entities in an image, returning structured
+    semantic role triples (agent/predicate/patient/instrument). Uses Grounding DINO for entity
+    detection + VLM for interaction classification. Best for: Human-Object Interaction
+    detection, understanding 'who is doing what to whom with what'.
+  backend: grounding_dino
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file or URL"
+      focus_entities:
+        type: string
+        description: "Optional dot-separated entity categories to focus on (e.g. 'person.dog.ball')"
+      box_threshold:
+        type: number
+        description: "Detection confidence threshold (0-1), default 0.2"
+        default: 0.2
+      max_interactions:
+        type: integer
+        description: "Maximum number of interactions to return, default 20"
+        default: 20
+      proximity_ratio:
+        type: number
+        description: "Max normalized center distance for candidate pairs (0-1), default 0.5"
+        default: 0.5
+    required:
+      - image_path

@@ -1,0 +1,386 @@
+# Basic Tools - Video/audio info extraction and manipulation
+
+get_video_duration:
+  description: |
+    Get the duration of a video file. Returns duration in seconds and formatted time
+    (HH:MM:SS.mmm), along with basic video metadata like resolution, has_audio
+    (whether the file contains an audio stream), has_video. Check has_audio before
+    calling audio tools (transcribe_audio, extract_audio, speaker-diarization, etc.)
+    to avoid failures on silent videos.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the video file"
+    required:
+      - file_path
+
+get_videos_duration:
+  description: |
+    Get the duration of multiple video files. Returns duration info for each file.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      file_paths:
+        type: array
+        items:
+          type: string
+        description: "List of absolute paths to video files"
+    required:
+      - file_paths
+
+get_directory_videos_duration:
+  description: |
+    Get the duration of all video files in a directory.
+    Supports common video formats (mp4, mkv, avi, mov, wmv, flv, webm).
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      directory_path:
+        type: string
+        description: "Absolute path to the directory"
+      recursive:
+        type: boolean
+        description: "Whether to search subdirectories recursively"
+        default: false
+    required:
+      - directory_path
+
+extract_frame:
+  description: |
+    Extract frame(s) at specific timestamp(s) from a video and save as image file(s)
+    to the output directory. Best for: getting frame(s) for further analysis
+    with image-based tools (inspect_image, obj-detect, ocr, etc.).
+
+    Supports two modes:
+    - Single frame: provide `time_sec` to extract one frame
+    - Multiple frames: provide `time_points` array to extract multiple frames at once
+
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      time_sec:
+        type: number
+        description: "Time point in seconds to extract a single frame (ignored if time_points is provided)"
+      time_points:
+        type: array
+        items:
+          type: number
+        description: "Array of time points in seconds to extract multiple frames (e.g., [1.0, 5.5, 10.0]). If provided, time_sec is ignored."
+      output_name:
+        type: string
+        description: "Output file name (optional, auto-generated if empty). For multiple frames, this serves as a prefix."
+        default: ""
+    required:
+      - video_path
+
+generate_thumbnail_grid:
+  description: |
+    Generate a timestamped thumbnail grid from a video by sampling frames across a
+    time range and arranging them into a single overview image.
+    Best for: comparing multiple moments, locating an event within a time window,
+    and deciding which timestamps deserve deeper follow-up.
+
+    Typical usage:
+    1. Generate an overview grid for the full video or a broad time range.
+    2. Use inspect_image on the grid to identify candidate timestamps or relevant frames.
+    3. Regenerate a denser grid over a narrower time range when finer temporal detail is needed.
+    4. Use extract_frame once an exact timestamp or frame is identified.
+
+    Note: thumbnails default to 320px wide, so small objects (text on signs,
+    distant faces, small UI elements) may be blurry or indistinguishable at this
+    resolution. Do not conclude "the target is not in the video" purely from
+    thumbnail inspection — follow up with extract_frame at the candidate timestamp
+    before giving up.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default: 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end). Set to narrow the time range."
+      interval:
+        type: number
+        description: "Sampling interval in seconds. If not specified, auto-calculated based on max_thumbnails."
+      max_thumbnails:
+        type: integer
+        description: "Maximum number of thumbnails when interval is auto (default: 20)"
+        default: 20
+      thumbnail_width:
+        type: integer
+        description: "Width of each thumbnail in pixels (default: 320)"
+        default: 320
+      columns:
+        type: integer
+        description: "Number of columns in the grid (default: 5)"
+        default: 5
+      show_timestamp:
+        type: boolean
+        description: "Whether to overlay timestamp label on each thumbnail (default: true)"
+        default: true
+      output_name:
+        type: string
+        description: "Output file name (optional, auto-generated if empty)"
+        default: ""
+    required:
+      - video_path
+
+extract_audio:
+  description: |
+    Separate and extract the audio track from a video or audio file, producing a
+    standalone audio file for downstream analysis (speech transcription, speaker
+    diarization, audio event detection, etc.).
+    Supports input formats: mp4/mkv/avi/mov/webm/flv/mp3/wav/m4a/flac/ogg/wma.
+    Output formats: wav (lossless PCM), mp3, aac, m4a, flac, ogg.
+    Uses stream copy when possible for maximum speed, otherwise re-encodes.
+    Optionally extract only a time segment, resample, or convert to mono.
+  backend: ffmpeg
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the input video/audio file"
+      output_format:
+        type: string
+        description: "Output audio format: wav, mp3, aac, m4a, flac, ogg (default: wav)"
+        default: "wav"
+        enum: ["wav", "mp3", "aac", "m4a", "flac", "ogg"]
+      start_time:
+        type: number
+        description: "Start time in seconds (optional, default: beginning)"
+      end_time:
+        type: number
+        description: "End time in seconds (optional, default: end of file)"
+      output_name:
+        type: string
+        description: "Output file name (optional). Auto-generated if not provided."
+        default: ""
+      sample_rate:
+        type: integer
+        description: "Resample to this rate in Hz (e.g. 16000, 22050, 44100). Optional."
+      mono:
+        type: boolean
+        description: "Convert to mono (single channel). Default: false."
+        default: false
+    required:
+      - video_path
+
+extract_video_segment:
+  description: |
+    Extract a continuous temporal sub-clip from a video given start and end timestamps,
+    preserving visual and optionally audio tracks, and returns the playable segment file path.
+    Uses stream copy (no re-encoding) for maximum speed; automatically falls back to
+    re-encoding if stream copy fails. Supports mp4/mkv/avi/mov/webm/flv and more.
+  backend: ffmpeg
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the input video file"
+      start_time:
+        type: number
+        description: "Start time in seconds"
+      end_time:
+        type: number
+        description: "End time in seconds"
+      output_name:
+        type: string
+        description: "Output file name (optional). Auto-generated if not provided."
+        default: ""
+      output_format:
+        type: string
+        description: "Output format/extension (e.g. 'mp4', 'mkv'). Defaults to input format."
+        default: ""
+      preserve_audio:
+        type: boolean
+        description: "Whether to keep the audio track in the output (default: true)"
+        default: true
+    required:
+      - video_path
+      - start_time
+      - end_time
+
+get_video_subtitle:
+  description: |
+    Get subtitle content for a video file based on time segments.
+    Automatically maps video file path to subtitle file.
+    Supports single or multiple time segments, timestamps in seconds or string format.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Path to the video file"
+      segments:
+        type: array
+        items:
+          type: object
+          properties:
+            start:
+              type: number
+              description: "Start time in seconds"
+            end:
+              type: number
+              description: "End time in seconds"
+          required: ["start", "end"]
+        description: "List of time segments. If not provided, returns all subtitles."
+      include_timestamps:
+        type: boolean
+        description: "Whether to include timestamps in the output text"
+        default: true
+    required:
+      - video_path
+
+get_multiple_videos_subtitle:
+  description: |
+    Get subtitle content for multiple videos at once.
+    Each video can have its own time segments specification.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      videos:
+        type: array
+        items:
+          type: object
+          properties:
+            video_path:
+              type: string
+              description: "Path to the video file"
+            segments:
+              type: array
+              items:
+                type: object
+                properties:
+                  start:
+                    type: number
+                  end:
+                    type: number
+              description: "Optional time segments for this video"
+          required: ["video_path"]
+        description: "List of video specifications"
+      include_timestamps:
+        type: boolean
+        description: "Whether to include timestamps in output text"
+        default: false
+    required:
+      - videos
+
+concat_images:
+  description: |
+    Concatenate multiple images into a single composite image arranged in a grid.
+    Each sub-image retains its original resolution (no downscaling). Timestamps
+    are overlaid on each sub-image. Best for: inspecting multiple extracted images in a single shot, creating a visual timeline from
+    extracted video frames, or comparing multiple frames side-by-side for VLM analysis.
+    Supports horizontal, vertical, or grid layout.
+  backend: script
+  media_type: image_list
+  input_schema:
+    type: object
+    properties:
+      image_paths:
+        type: array
+        items:
+          type: string
+        description: "List of absolute paths to image files to concatenate (2-30 images)"
+      timestamps:
+        type: array
+        items:
+          type: number
+        description: "Optional list of timestamps (in seconds) corresponding to each image. Overlaid as text on each sub-image."
+      layout:
+        type: string
+        description: "Layout direction: 'horizontal' (left-to-right), 'vertical' (top-to-bottom), or 'grid' (auto-arrange). Default: 'grid'"
+        default: "grid"
+      cols:
+        type: integer
+        description: "Number of columns for grid layout (default: auto-calculated). Only used when layout='grid'."
+        default: 0
+      output_name:
+        type: string
+        description: "Output file name (optional, auto-generated if empty)"
+        default: ""
+    required:
+      - image_paths
+
+check_subtitle_exists:
+  description: |
+    Check if a subtitle file exists for the given video path.
+  backend: script
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Path to the video file"
+    required:
+      - video_path
+
+# YouTube Cache Tools
+
+get_video_from_youtube_id:
+  description: |
+    When a YouTube video URL/ID is provided, get the local path of the corresponding
+    YouTube video. If the file is not found locally, it will be downloaded automatically.
+    Returns the absolute path of the video file (if incomplete, you can delete and
+    re-download). Returns failure message if download fails.
+  backend: yt-dlp
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_id:
+        type: string
+        description: "YouTube video ID (e.g., 'dQw4w9WgXcQ', not the full URL)"
+      cache_dir:
+        type: string
+        description: "Cache directory path (optional, defaults to data/youtube_cache/)"
+    required:
+      - video_id
+
+check_youtube_cache:
+  description: |
+    When a YouTube URL or ID is given, check if the YouTube video is already cached
+    locally. If cached, download is not triggered. If not cached, download is not
+    triggered. Incomplete files can be deleted and re-downloaded.
+  backend: yt-dlp
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_id:
+        type: string
+        description: "YouTube video ID"
+      cache_dir:
+        type: string
+        description: "Cache directory path (optional)"
+    required:
+      - video_id

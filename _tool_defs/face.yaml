@@ -1,0 +1,189 @@
+# Face Tools - Face detection, clustering, emotion, and gaze analysis
+
+face_detect:
+  description: |
+    Detect all faces in a single image. Returns bounding boxes, detection scores,
+    age/gender estimates for each face. Best for: counting people in a frame,
+    identifying who is present.
+  backend: insightface
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+    required:
+      - image_path
+
+face_cluster_video:
+  description: |
+    Detect faces across video frames and cluster them to identify unique persons.
+    Returns the number of unique persons, their appearance timelines, and demographics.
+    Best for: Counting Problem ('how many different people appear?'), tracking who
+    appears when in documentaries/interviews.
+  backend: insightface
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate in fps (default 1.0)"
+        default: 1.0
+      distance_threshold:
+        type: number
+        description: "Cosine distance threshold for same-person matching (default 0.6, range 0.3-0.8)"
+        default: 0.6
+    required:
+      - video_path
+
+face_match:
+  description: |
+    Compare faces in two images to determine if they are the same person.
+    Returns similarity score and same-person judgment.
+  backend: insightface
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_a:
+        type: string
+        description: "Absolute path to the first image"
+      image_b:
+        type: string
+        description: "Absolute path to the second image"
+      threshold:
+        type: number
+        description: "Similarity threshold for same-person judgment (default 0.4)"
+        default: 0.4
+    required:
+      - image_a
+      - image_b
+
+analyze_face_emotion:
+  description: |
+    Analyze facial expression emotions from a single image. Detects all faces, then classifies
+    each face's emotion into 7 Ekman categories (angry, disgust, fear, happy, neutral, sad,
+    surprise). Returns emotion probabilities per face with bounding boxes, age, and gender.
+  backend: insightface
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      box_threshold:
+        type: number
+        description: "Minimum face detection confidence (default 0.5)"
+        default: 0.5
+    required:
+      - image_path
+
+analyze_speech_emotion:
+  description: |
+    Analyze speech emotion from an audio or video file. Classifies the dominant vocal emotion
+    (angry, happy, sad, neutral) using wav2vec2-based speech emotion recognition.
+    Supports formats: wav, mp3, m4a, flac, ogg, wma, mp4, mov, avi, mkv, webm, m4v.
+  backend: transformers
+  media_type: audio
+  input_schema:
+    type: object
+    properties:
+      file_path:
+        type: string
+        description: "Absolute path to the audio/video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (optional)"
+      end_time:
+        type: number
+        description: "End time in seconds (optional)"
+    required:
+      - file_path
+
+analyze_multimodal_emotion:
+  description: |
+    Combined face + speech emotion analysis on a video. Extracts a frame for facial
+    expression analysis and an audio window for speech emotion analysis, then fuses
+    both modalities with configurable weights.
+  backend: insightface
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      time_sec:
+        type: number
+        description: "Time point in seconds for analysis"
+      fusion_weight_face:
+        type: number
+        description: "Weight for face emotion (0-1), speech weight is 1 - this. Default 0.6"
+        default: 0.6
+      audio_window:
+        type: number
+        description: "Audio window in seconds around time_sec (default 5.0)"
+        default: 5.0
+    required:
+      - video_path
+      - time_sec
+
+gaze_estimate:
+  description: |
+    Estimate gaze direction for all detected faces in an image. Returns per-face
+    gaze angles (yaw/pitch), gaze direction label, and gaze target estimation.
+    Best for: determining where people are looking, attention analysis.
+  backend: insightface
+  media_type: image
+  input_schema:
+    type: object
+    properties:
+      image_path:
+        type: string
+        description: "Absolute path to the image file"
+      box_threshold:
+        type: number
+        description: "Minimum face detection confidence (default 0.5)"
+        default: 0.5
+    required:
+      - image_path
+
+detect_active_speaker:
+  description: |
+    Detect who is actively speaking in a video segment by correlating face detection
+    with audio activity. Returns per-person speaking timeline with confidence scores.
+    Best for: identifying speakers in multi-person scenes, interview analysis.
+  backend: insightface
+  media_type: video
+  input_schema:
+    type: object
+    properties:
+      video_path:
+        type: string
+        description: "Absolute path to the video file"
+      start_time:
+        type: number
+        description: "Start time in seconds (default 0)"
+        default: 0
+      end_time:
+        type: number
+        description: "End time in seconds (default: video end)"
+      sample_fps:
+        type: number
+        description: "Frame sampling rate (default 2)"
+        default: 2
+    required:
+      - video_path
