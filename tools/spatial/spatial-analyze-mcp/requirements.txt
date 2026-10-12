@@ -1,0 +1,2 @@
+# Managed centrally by the vision dependency profile.
+-r ../../../requirements/profiles/vision.txt

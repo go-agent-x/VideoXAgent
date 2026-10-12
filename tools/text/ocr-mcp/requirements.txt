@@ -1,0 +1,2 @@
+# Managed centrally by the ocr dependency profile.
+-r ../../../requirements/profiles/ocr.txt

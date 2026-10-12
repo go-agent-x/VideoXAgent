@@ -1,0 +1,2 @@
+# Compatibility entry point; install the base profile from the repository root.
+-r ../../../requirements/profiles/base.txt

@@ -1,0 +1,15 @@
+[project]
+name = "video-duration-mcp"
+version = "0.1.0"
+description = "MCP server for reading video file duration"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+video-duration-mcp = "server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,1 @@
+# thumbnail-navigator-mcp

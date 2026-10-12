@@ -1,0 +1,2 @@
+# Managed centrally by the music dependency profile.
+-r ../../../requirements/profiles/music.txt

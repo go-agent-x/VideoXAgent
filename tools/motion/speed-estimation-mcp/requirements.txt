@@ -1,0 +1,2 @@
+# Managed centrally by the base dependency profile.
+-r ../../../requirements/profiles/base.txt
