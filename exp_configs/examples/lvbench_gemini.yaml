@@ -1,0 +1,37 @@
+# Historical source-derived example; not an exact paper reproduction.
+# Source: LVideoXAgent/exp_configs/lvbench_exp.yaml.
+# Edit the endpoint and model placeholders before running.
+exp_name: lvbench_gemini_example
+
+model:
+  provider: ChatGoogleGenerativeAI
+  model: gemini-3.1-pro-preview
+  base_url: https://your-llm-provider.example
+  temperature: 0.0
+  max_retries: 10
+  include_thoughts: true
+  thinking_budget: 1024
+
+# The source did not specify a VLM; choose one supported by your endpoint.
+vlm_model_name: YOUR_VLM_MODEL
+VLM_API_URL: https://your-vlm-provider.example/v1
+mcp_json_file: .mcp.profiles.json
+
+disabled_builtin_tools:
+  - read_file
+  - write_file
+  - edit_file
+  - execute
+  - task
+  - ls
+
+# Start with one sample; raise these limits for a full experiment.
+workers: 1
+max_samples: 1
+sample_rate: 1
+skip_completed: true
+system_prompt_file: SYSTEM_PROMPT.md
+data_files:
+  - path: data/LVBench/test/all_data.jsonl
+    # The source used a fixed 150-question subset. To select your local subset:
+    # qid_file: data/sampled_qids/LVBench_all_data_sampled_150.txt

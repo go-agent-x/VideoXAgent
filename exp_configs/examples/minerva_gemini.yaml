@@ -1,0 +1,37 @@
+# Historical source-derived example; not an exact paper reproduction.
+# Source: LVideoXAgent/exp_configs/minerva_exp.yaml.
+# Edit the endpoint and model placeholders before running.
+exp_name: minerva_gemini_example
+
+model:
+  # The source used Gemini through an OpenAI-compatible endpoint.
+  provider: ChatOpenAI
+  model: gemini-3.1-pro-preview
+  base_url: https://your-llm-provider.example/v1
+  temperature: 0.0
+  max_retries: 10
+  reasoning_effort: medium
+
+# The source did not specify a VLM; choose one supported by your endpoint.
+vlm_model_name: YOUR_VLM_MODEL
+VLM_API_URL: https://your-vlm-provider.example/v1
+mcp_json_file: .mcp.profiles.json
+
+disabled_builtin_tools:
+  - read_file
+  - write_file
+  - edit_file
+  - execute
+  - write_todos
+  - task
+
+# Start with one sample; raise these limits for a full experiment.
+workers: 1
+max_samples: 1
+sample_rate: 1
+skip_completed: true
+system_prompt_file: SYSTEM_PROMPT.md
+data_files:
+  - path: data/minerva/test/minerva_all_data.jsonl
+    # The source used a fixed 150-question subset. To select your local subset:
+    # qid_file: data/sampled_qids/minerva_minerva_all_data_sampled_150.txt

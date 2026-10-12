@@ -1,0 +1,31 @@
+# Model configuration
+# videomme_v2 validation - Gemini 3.1 Pro
+exp_name: videomme_v2_gemini31pro_val_write_todos
+
+model:
+  provider: "ChatGoogleGenerativeAI"
+  model: "gemini-3.1-pro-preview"
+  base_url: "http://example-llm-ip:8000/v1"
+  temperature: 0.0
+  max_retries: 10
+  include_thoughts: true  # Enable thinking output
+  thinking_budget: 512
+  # thinking_level: "medium"  # Optional: minimal, low, medium, high
+
+mcp_json_file: ".mcp.profiles.json"
+
+disabled_builtin_tools:
+  - read_file
+  - write_file
+  - edit_file
+  - execute
+  - task
+  - ls
+
+workers: 4
+gpu_ids: [0, 1, 2, 3]
+skip_completed: true
+system_prompt_file: SYSTEM_PROMPT.md
+data_files:
+  - path: data/sampling_val/videomme_v2_val/videomme_v2_val.jsonl
+    qid_file: data/sampling_val/videomme_v2_val/videomme_v2_val_qids.txt
