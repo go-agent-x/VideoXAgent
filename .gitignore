@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local credentials and MCP overrides
+/key.yaml
+/.mcp.json
+.env
+.env.*
+!.env.example
+
+# Local environments, downloaded models, and generated runtime data
+/.venvs/
+/venv/
+/models/
+/.cache/
+/output/
+/conversations/
+
+# Runtime logs, uploaded media, and generated dashboards
+/logs/
+/uploads/
+/html_show/tool_workflow.html
+/html_show/tool_workflow_*.html
+/html_show/server_*.log
+/html_show/server_*.pid

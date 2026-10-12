@@ -1,0 +1,14 @@
+# PaddleOCR is isolated because this stack is kept on NumPy 1.x.
+mcp==1.27.0
+numpy==1.26.4
+opencv-python==4.11.0.86
+opencv-contrib-python==4.10.0.84
+Pillow==12.2.0
+PyYAML==6.0.2
+paddleocr==2.10.0
+paddlex==3.4.3
+scikit-image==0.26.0
+shapely==2.1.2
+
+# paddlepaddle or paddlepaddle-gpu is selected by install_profiles.sh.
+

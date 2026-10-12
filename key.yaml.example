@@ -1,0 +1,5 @@
+# Copy to key.yaml and replace the placeholders with your provider credentials.
+# Configure model names and API endpoints in the experiment YAML, not here.
+LLM_API_KEY: "YOUR_LLM_API_KEY"
+# Required for VLM-based tools such as scene-query and inspect-image.
+VLM_API_KEY: "YOUR_VLM_API_KEY"

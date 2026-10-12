@@ -1,0 +1,12 @@
+# Agent runtime and lightweight MCP servers.
+# install_profiles.sh resolves this file together with the editable project
+# declared in pyproject.toml; installing this file alone is not the full base setup.
+-r common.txt
+
+# Demo Agent web server (installed during setup, never at server startup).
+aiohttp>=3.9,<4
+
+scenedetect==0.6.7.1
+# frame-diff imports skimage.metrics.structural_similarity (SSIM).
+scikit-image==0.26.0
+yt-dlp[default]>=2025.1.1

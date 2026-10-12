@@ -1,0 +1,13 @@
+# Shared runtime for MCP servers that use NumPy/OpenCV.
+# This file is maintained by the project; do not add tool-local pins.
+mcp==1.27.0
+numpy==1.26.4
+opencv-python-headless==4.11.0.86
+Pillow==12.2.0
+PyYAML==6.0.2
+httpx==0.28.1
+requests==2.33.1
+scipy==1.17.1
+scikit-learn==1.8.0
+shapely==2.1.2
+
