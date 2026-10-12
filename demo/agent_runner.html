@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoXAgent Runner</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a8a8a8;
+            --accent: #4ecca3;
+            --accent-hover: #3db892;
+            --error: #e74c3c;
+            --warning: #f39c12;
+            --info: #3498db;
+            --tool-bg: #1e3a5f;
+            --thinking-bg: #2d2d4a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1::before {
+            content: "🎬";
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--error);
+        }
+
+        .status-dot.connected {
+            background: var(--accent);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left sidebar - Configuration only */
+        .sidebar {
+            width: 420px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--bg-tertiary);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .sidebar-section h3 {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        /* Recents (conversation history) */
+        .recents-list {
+            max-height: 260px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .recents-empty {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            padding: 4px 2px;
+        }
+
+        .recent-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: background 0.15s;
+        }
+
+        .recent-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .recent-item.active {
+            background: var(--bg-tertiary);
+        }
+
+        .recent-title {
+            flex: 1;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .recent-pin {
+            color: var(--accent);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .recent-pin svg { width: 13px; height: 13px; }
+
+        .recent-dots {
+            flex-shrink: 0;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 2px 6px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .recent-item:hover .recent-dots,
+        .recent-item.active .recent-dots {
+            opacity: 1;
+        }
+
+        .recent-dots:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .recent-menu {
+            position: fixed;
+            min-width: 180px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+        }
+
+        .recent-menu button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 9px 10px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .recent-menu button:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .recent-menu button.danger {
+            color: var(--error);
+        }
+
+        .recent-menu button svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .recent-menu-sep {
+            height: 1px;
+            background: var(--bg-tertiary);
+            margin: 4px 2px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .tools-select {
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 5px;
+            padding: 4px;
+        }
+
+        .tool-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            margin: 1px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .tool-checkbox:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .tool-checkbox input {
+            width: auto;
+        }
+
+        .tool-checkbox label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        /* Right content area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Input section - pinned to the bottom of the content area (chat composer) */
+        .input-section {
+            background: var(--bg-secondary);
+            padding: 16px 20px;
+            border-top: 1px solid var(--bg-tertiary);
+            flex-shrink: 0;
+        }
+
+        /* Chat composer box (rounded container holding textarea + toolbar) */
+        .composer {
+            background: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 24px;
+            padding: 10px 14px 10px;
+            transition: border-color 0.2s;
+        }
+
+        .composer:focus-within {
+            border-color: var(--accent);
+        }
+
+        .composer-input {
+            width: 100%;
+            padding: 6px 4px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            min-height: 44px;
+            max-height: 200px;
+            line-height: 1.5;
+        }
+
+        .composer-input:focus {
+            outline: none;
+        }
+
+        .composer-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 2px;
+        }
+
+        .composer-left,
+        .composer-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .new-btn {
+            background: transparent;
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 999px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-family: inherit;
+            padding: 6px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .new-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        /* Circular send / stop button */
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #3f4a5f;          /* muted state when the box is empty */
+            color: #cbd5e1;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+        }
+
+        .send-btn.active {
+            background: #0a84ff;          /* bright blue when the box has text */
+            color: #fff;
+        }
+
+        .send-btn.active:hover {
+            background: #0a74e0;
+        }
+
+        .send-btn.stop {
+            background: var(--text-secondary);
+            color: var(--bg-primary);
+        }
+
+        /* Output section */
+        .output-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .output-header {
+            padding: 10px 20px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .output-header h2 {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .output-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .output-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .output-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: var(--bg-primary);
+        }
+
+        .event {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .event-status {
+            background: var(--bg-tertiary);
+            color: var(--info);
+            border-left: 3px solid var(--info);
+        }
+
+        .event-thinking {
+            background: var(--thinking-bg);
+            color: #b8a9c9;
+            border-left: 3px solid #9b59b6;
+            font-style: italic;
+        }
+
+        .event-tool-start {
+            background: var(--tool-bg);
+            border-left: 3px solid var(--accent);
+        }
+
+        .event-tool-start .tool-name {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .event-tool-start .tool-input {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+
+        .event-tool-end {
+            background: var(--tool-bg);
+            border-left: 3px solid var(--accent);
+        }
+
+        .event-tool-end .tool-output {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 8px 0 0 0;
+            padding: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .event-tool-error {
+            background: rgba(231, 76, 60, 0.2);
+            border-left: 3px solid var(--error);
+            color: var(--error);
+        }
+
+        .image-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        /* Thumbnail tile: 50% larger, with a frosted-glass blurred backdrop of
+           the same image filling the space around the (contain-fit) picture. */
+        .image-tile {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--bg-tertiary);
+            background-image: var(--img);
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .image-tile::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: var(--img);
+            background-size: cover;
+            background-position: center;
+            filter: blur(16px) brightness(0.85);
+            transform: scale(1.2);
+        }
+
+        .image-tile img {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.2s;
+        }
+
+        .image-tile:hover {
+            border-color: var(--accent);
+        }
+
+        .image-tile:hover img {
+            transform: scale(1.03);
+        }
+
+        /* Floating image viewer (in-page lightbox) */
+        .image-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-overlay-body {
+            max-width: 100%;
+            max-height: 100%;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-overlay-body img {
+            display: block;
+            transform-origin: center center;
+        }
+
+        .image-overlay-toolbar {
+            position: fixed;
+            top: 20px;
+            right: 24px;
+            display: flex;
+            gap: 12px;
+            z-index: 1001;
+        }
+
+        .io-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+
+        .io-btn:hover {
+            background: rgba(255, 255, 255, 0.32);
+        }
+
+        .io-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .event-error {
+            background: rgba(231, 76, 60, 0.2);
+            border-left: 3px solid var(--error);
+            color: var(--error);
+        }
+
+        .event-complete {
+            background: rgba(78, 204, 163, 0.2);
+            border-left: 3px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .event-system-prompt {
+            background: var(--bg-secondary);
+            border-left: 3px solid #f39c12;
+            color: var(--text-primary);
+        }
+
+        .response-block {
+            background: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 3px solid var(--accent);
+        }
+
+        .thinking-block {
+            background: var(--thinking-bg);
+            padding: 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            border-left: 3px solid #9b59b6;
+            font-style: italic;
+            color: #b8a9c9;
+        }
+
+        .clear-btn {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .clear-btn:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        .upload-status {
+            margin-bottom: 10px;
+        }
+
+        .input-section.dragover {
+            outline: 2px dashed var(--accent);
+            outline-offset: -4px;
+        }
+
+        /* "+" add button (inside the composer box) and its popup menu */
+        .composer-add {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .add-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .add-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .add-menu {
+            position: absolute;
+            bottom: 46px;
+            left: 0;
+            min-width: 240px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+        }
+
+        .add-menu-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding: 4px 8px 6px;
+        }
+
+        .add-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 8px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .add-menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .add-menu-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+        }
+
+        .add-menu-icon svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .progress-text {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .upload-complete {
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .upload-filename {
+            color: var(--accent);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .upload-path {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .upload-clear-btn {
+            background: transparent;
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 3px 8px;
+        }
+
+        .upload-clear-btn:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .sidebar-section {
+                flex: 1;
+                min-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>VideoXAgent Runner</h1>
+        <div class="connection-status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Disconnected</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Left sidebar: Configuration -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3>Configuration</h3>
+                <div class="form-group">
+                    <label for="configSelect">Experiment Config</label>
+                    <select id="configSelect">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="systemPromptMode">System Prompt Mode</label>
+                    <select id="systemPromptMode" onchange="toggleSystemPromptMode()">
+                        <option value="text">Custom Text</option>
+                        <option value="file">File Path</option>
+                    </select>
+                </div>
+                <div class="form-group" id="systemPromptFileGroup" style="display: none;">
+                    <label for="systemPromptFile">File Path</label>
+                    <input type="text" id="systemPromptFile" value="SYSTEM_PROMPT.md">
+                </div>
+                <div class="form-group" id="systemPromptTextGroup">
+                    <label for="systemPromptText">Custom Text</label>
+                    <textarea id="systemPromptText" placeholder="Paste your system prompt here..." style="width: 100%; padding: 8px; background: var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius: 5px; color: var(--text-primary); font-size: 0.85rem; font-family: inherit; resize: vertical; min-height: 120px; max-height: 300px;">you are a video agent</textarea>
+                </div>
+            </div>
+
+            <div class="sidebar-section recents-section">
+                <h3>Recents</h3>
+                <div class="recents-list" id="recentsList">
+                    <p class="recents-empty">No conversations yet</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section" style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                <h3>MUST Using Tools  (Optional)</h3>
+                <div class="tools-select" id="toolsContainer">
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; padding: 4px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right content area -->
+        <div class="content-area">
+            <!-- Output section (conversation transcript) -->
+            <div class="output-section">
+                <div class="output-header">
+                    <h2>Output</h2>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div class="output-stats" id="outputStats">
+                            <span id="durationStat" style="display: none;">⏱ <strong>0s</strong></span>
+                            <span id="tokensStat" style="display: none;">📊 <strong>0</strong> tokens</span>
+                        </div>
+                        <button class="clear-btn" onclick="clearOutput()">Clear</button>
+                    </div>
+                </div>
+                <div class="output-content" id="outputContent">
+                    <p style="color: var(--text-secondary);">Output will appear here when you run the agent...</p>
+                </div>
+            </div>
+
+            <!-- Input section pinned below the output (chat composer) -->
+            <div class="input-section" id="inputSection">
+                <input type="file" id="videoFileInput" accept="video/*" style="display: none;">
+                <div class="upload-status" id="uploadStatus" style="display: none;">
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                        <span class="progress-text" id="progressText">Uploading... 0%</span>
+                    </div>
+                    <div class="upload-complete" id="uploadComplete" style="display: none;">
+                        <span class="upload-filename" id="uploadFilename"></span>
+                        <span class="upload-path" id="uploadPath"></span>
+                        <button class="upload-clear-btn" type="button" onclick="clearUpload(event)">Clear</button>
+                    </div>
+                </div>
+                <div class="composer" id="composer">
+                    <textarea id="promptInput" class="composer-input" rows="1" placeholder="Message VideoXAgent   (Enter to send · Shift+Enter for newline)"></textarea>
+                    <div class="composer-toolbar">
+                        <div class="composer-left">
+                            <div class="composer-add">
+                                <button class="add-btn" id="addBtn" type="button" onclick="toggleAddMenu(event)" title="Add">+</button>
+                                <div class="add-menu" id="addMenu" style="display: none;">
+                                    <div class="add-menu-title">Add</div>
+                                    <button class="add-menu-item" type="button" onclick="triggerVideoUpload()">
+                                        <span class="add-menu-icon"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3a2.5 2.5 0 0 1 5 0v9a1.5 1.5 0 0 1-3 0V5a.5.5 0 0 1 1 0v7a.5.5 0 0 0 1 0V3a1.5 1.5 0 1 0-3 0v9a2.5 2.5 0 0 0 5 0V5a.5.5 0 0 1 1 0v7a3.5 3.5 0 1 1-7 0z"/></svg></span>
+                                        <span>Add videos &amp; files</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <button class="new-btn" id="newBtn" type="button" onclick="newConversation()" style="display: none;">🆕 New</button>
+                        </div>
+                        <div class="composer-right">
+                            <button class="send-btn" id="runBtn" type="button" onclick="onSendClick()" title="Send"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating image viewer (in-page lightbox) -->
+    <div id="imageOverlay" class="image-overlay" style="display: none;" onclick="if (event.target === this) closeImageOverlay()">
+        <div class="image-overlay-toolbar">
+            <button class="io-btn" type="button" onclick="zoomImage(-1)" title="Zoom out">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            </button>
+            <button class="io-btn" type="button" onclick="zoomImage(1)" title="Zoom in">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            </button>
+            <button class="io-btn" type="button" onclick="closeImageOverlay()" title="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="image-overlay-body" id="imageOverlayBody" onclick="if (event.target === this) closeImageOverlay()">
+            <img id="imageOverlayImg" src="" alt="preview"/>
+        </div>
+    </div>
+
+    <!-- Dropdown menu for a Recents item -->
+    <div id="recentMenu" class="recent-menu" style="display: none;">
+        <button type="button" onclick="renameRecent()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+            <span>Rename</span>
+        </button>
+        <button type="button" onclick="togglePinRecent()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14l-1.5-3V6a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v8z"></path></svg>
+            <span id="pinMenuLabel">Pin</span>
+        </button>
+        <div class="recent-menu-sep"></div>
+        <button type="button" class="danger" onclick="deleteRecent()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Delete chat</span>
+        </button>
+    </div>
+
+    <script>
+        let ws = null;
+        let isRunning = false;
+        let currentAgentId = null;
+        let sessionActive = false;  // true once a conversation has been started
+        let responseBuffer = '';
+        let thinkingBuffer = '';
+        let startTime = null;
+        let uploadedVideoPath = null;
+        let isUploading = false;
+        let promptHistory = [];      // submitted prompts, oldest -> newest
+        let historyIndex = null;     // null = not navigating history
+        let historyDraft = '';       // unsent text stashed while navigating
+        let conversations = [];      // {id, title, html, pinned, agentId}
+        let activeConvId = null;     // id of the conversation currently shown
+        let convSeq = 0;             // counter for temporary conversation ids
+        let recentMenuTargetId = null;  // conversation the 3-dot menu acts on
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfigs().then(loadTools);
+            document.getElementById('configSelect').addEventListener('change', loadTools);
+            initUpload();
+            connectWebSocket();
+            loadPersistedConversations();
+
+            // Enter sends the prompt; Shift+Enter inserts a newline.
+            const promptInput = document.getElementById('promptInput');
+            promptInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                    e.preventDefault();
+                    runAgent();
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    navigatePromptHistory(e, 'up');
+                } else if (e.key === 'ArrowDown') {
+                    navigatePromptHistory(e, 'down');
+                }
+            });
+
+            // Brighten the send button whenever the box has text.
+            promptInput.addEventListener('input', updateSendButtonState);
+
+            // Initialise the send button icon / muted state.
+            setRunningUI(false);
+        });
+
+        // Recall previously submitted prompts with the Up/Down arrow keys.
+        // Up steps further back through history (until the first prompt);
+        // Down steps forward and finally restores the in-progress draft.
+        function navigatePromptHistory(e, direction) {
+            const textarea = e.target;
+            if (promptHistory.length === 0) return;
+
+            const value = textarea.value;
+            const caret = textarea.selectionStart;
+            const onFirstLine = value.lastIndexOf('\n', caret - 1) === -1;
+            const onLastLine = value.indexOf('\n', caret) === -1;
+
+            if (direction === 'up') {
+                // Only hijack Up when already browsing history or the caret is on
+                // the first line, so normal multi-line editing still works.
+                if (historyIndex === null && !onFirstLine) return;
+                e.preventDefault();
+                if (historyIndex === null) {
+                    historyDraft = value;
+                    historyIndex = promptHistory.length - 1;
+                } else if (historyIndex > 0) {
+                    historyIndex -= 1;
+                }
+                setPromptFromHistory(textarea, promptHistory[historyIndex]);
+            } else {
+                if (historyIndex === null) return;  // not browsing -> default behaviour
+                if (!onLastLine) return;
+                e.preventDefault();
+                if (historyIndex < promptHistory.length - 1) {
+                    historyIndex += 1;
+                    setPromptFromHistory(textarea, promptHistory[historyIndex]);
+                } else {
+                    // Past the newest entry: restore the stashed draft.
+                    historyIndex = null;
+                    setPromptFromHistory(textarea, historyDraft);
+                }
+            }
+        }
+
+        function setPromptFromHistory(textarea, text) {
+            textarea.value = text;
+            const end = text.length;
+            textarea.setSelectionRange(end, end);
+            updateSendButtonState();
+        }
+
+        function recordPromptHistory(prompt) {
+            // Skip consecutive duplicates, then reset the navigation cursor.
+            if (promptHistory[promptHistory.length - 1] !== prompt) {
+                promptHistory.push(prompt);
+            }
+            historyIndex = null;
+            historyDraft = '';
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                updateStatus(true);
+                console.log('WebSocket connected');
+            };
+
+            ws.onclose = () => {
+                updateStatus(false);
+                console.log('WebSocket disconnected');
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleEvent(data);
+                } catch (e) {
+                    console.error('Failed to parse message:', e);
+                }
+            };
+        }
+
+        function updateStatus(connected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Connected';
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        async function loadConfigs() {
+            try {
+                const response = await fetch('/api/configs');
+                const data = await response.json();
+                const select = document.getElementById('configSelect');
+                select.innerHTML = '';
+
+                data.configs.forEach(config => {
+                    const option = document.createElement('option');
+                    option.value = config.path;
+                    option.textContent = config.path;
+                    select.appendChild(option);
+                });
+
+                const defaultConfig = data.configs.find(c => c.path === data.default_config);
+                if (defaultConfig) {
+                    select.value = defaultConfig.path;
+                }
+            } catch (e) {
+                console.error('Failed to load configs:', e);
+            }
+        }
+
+        let toolsRequestId = 0;
+        async function loadTools() {
+            const requestId = ++toolsRequestId;
+            const config = document.getElementById('configSelect').value;
+            const container = document.getElementById('toolsContainer');
+            container.textContent = 'Loading tools...';
+            try {
+                const response = await fetch('/api/tools?' + new URLSearchParams({config}));
+                const data = await response.json();
+                if (requestId !== toolsRequestId) return;
+                if (!response.ok) throw new Error(data.error || 'Failed to load tools');
+                container.innerHTML = '';
+
+                data.tools.forEach(tool => {
+                    const div = document.createElement('div');
+                    div.className = 'tool-checkbox';
+                    const safeTool = escapeHtml(tool);
+                    div.innerHTML = `
+                        <input type="checkbox" id="tool_${safeTool}" value="${safeTool}">
+                        <label for="tool_${safeTool}">${safeTool}</label>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                if (requestId !== toolsRequestId) return;
+                container.textContent = 'Failed to load tools for this config.';
+                console.error('Failed to load tools:', e);
+            }
+        }
+
+        function getSelectedTools() {
+            const checkboxes = document.querySelectorAll('#toolsContainer input:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function toggleSystemPromptMode() {
+            const mode = document.getElementById('systemPromptMode').value;
+            document.getElementById('systemPromptFileGroup').style.display = mode === 'file' ? '' : 'none';
+            document.getElementById('systemPromptTextGroup').style.display = mode === 'text' ? '' : 'none';
+        }
+
+        function initUpload() {
+            const input = document.getElementById('videoFileInput');
+            const dropZone = document.getElementById('inputSection');
+
+            input.addEventListener('change', () => {
+                if (isUploading || input.files.length === 0) return;
+                uploadFile(input.files[0]);
+            });
+
+            // Drag & drop anywhere on the composer still works.
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!isUploading) dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (isUploading || e.dataTransfer.files.length === 0) return;
+                uploadFile(e.dataTransfer.files[0]);
+            });
+
+            // Close the "+" menu when clicking outside of it.
+            document.addEventListener('click', (e) => {
+                const menu = document.getElementById('addMenu');
+                const btn = document.getElementById('addBtn');
+                if (menu.style.display !== 'none' && !menu.contains(e.target) && e.target !== btn) {
+                    menu.style.display = 'none';
+                }
+                // Close the Recents item menu when clicking elsewhere.
+                const rMenu = document.getElementById('recentMenu');
+                if (rMenu.style.display !== 'none' && !rMenu.contains(e.target)) {
+                    closeRecentMenu();
+                }
+            });
+        }
+
+        function toggleAddMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('addMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function triggerVideoUpload() {
+            document.getElementById('addMenu').style.display = 'none';
+            if (isUploading) return;
+            document.getElementById('videoFileInput').click();
+        }
+
+        function uploadFile(file) {
+            isUploading = true;
+            setUploadState('progress');
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressText').textContent = `Uploading ${file.name}... 0%`;
+
+            const formData = new FormData();
+            formData.append('video', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/upload');
+
+            xhr.upload.onprogress = (e) => {
+                if (!e.lengthComputable) return;
+                const percent = Math.round((e.loaded / e.total) * 100);
+                document.getElementById('progressFill').style.width = percent + '%';
+                document.getElementById('progressText').textContent = `Uploading ${file.name}... ${percent}%`;
+            };
+
+            xhr.onload = () => {
+                isUploading = false;
+                try {
+                    const result = JSON.parse(xhr.responseText || '{}');
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        uploadedVideoPath = result.path;
+                        showUploadComplete(result.filename || file.name, result.path);
+                        insertVideoPrompt(result.path);
+                    } else {
+                        appendEvent('error', { error: 'Upload failed: ' + (result.error || xhr.responseText || xhr.statusText || 'Unknown error') });
+                        resetUpload();
+                    }
+                } catch (e) {
+                    const detail = xhr.responseText ? ` Server response: ${xhr.responseText.slice(0, 500)}` : '';
+                    appendEvent('error', { error: 'Upload failed: invalid server response.' + detail });
+                    resetUpload();
+                }
+            };
+
+            xhr.onerror = () => {
+                isUploading = false;
+                appendEvent('error', { error: 'Upload failed: network error' });
+                resetUpload();
+            };
+
+            xhr.send(formData);
+        }
+
+        function setUploadState(state) {
+            const showProgress = state === 'progress';
+            const showComplete = state === 'complete';
+            document.getElementById('uploadProgress').style.display = showProgress ? 'block' : 'none';
+            document.getElementById('uploadComplete').style.display = showComplete ? 'flex' : 'none';
+            document.getElementById('uploadStatus').style.display = (showProgress || showComplete) ? 'block' : 'none';
+        }
+
+        function showUploadComplete(filename, path) {
+            setUploadState('complete');
+            document.getElementById('uploadFilename').textContent = filename;
+            document.getElementById('uploadPath').textContent = path;
+            document.getElementById('uploadPath').title = path;
+        }
+
+        function clearUpload(event) {
+            if (event) event.stopPropagation();
+            uploadedVideoPath = null;
+            resetUpload();
+        }
+
+        function resetUpload() {
+            isUploading = false;
+            setUploadState('placeholder');
+            document.getElementById('videoFileInput').value = '';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Uploading... 0%';
+        }
+
+        function insertVideoPrompt(videoPath) {
+            const textarea = document.getElementById('promptInput');
+            const template = `Given a video: ${videoPath}\nQuestion: `;
+            textarea.value = template;
+            textarea.focus();
+            textarea.setSelectionRange(template.length, template.length);
+            updateSendButtonState();
+        }
+
+        const SEND_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>';
+        const STOP_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
+
+        function onSendClick() {
+            if (isRunning) {
+                stopAgent();
+            } else {
+                runAgent();
+            }
+        }
+
+        function updateSendButtonState() {
+            const sendBtn = document.getElementById('runBtn');
+            if (isRunning) return;  // running state is styled separately
+            const hasText = document.getElementById('promptInput').value.trim().length > 0;
+            sendBtn.classList.toggle('active', hasText);
+        }
+
+        function setRunningUI(running) {
+            isRunning = running;
+            const sendBtn = document.getElementById('runBtn');
+            if (running) {
+                sendBtn.classList.add('stop');
+                sendBtn.classList.remove('active');
+                sendBtn.innerHTML = STOP_ICON;
+                sendBtn.title = 'Stop';
+            } else {
+                sendBtn.classList.remove('stop');
+                sendBtn.innerHTML = SEND_ICON;
+                sendBtn.title = 'Send';
+                updateSendButtonState();
+            }
+            document.getElementById('newBtn').style.display = sessionActive ? 'flex' : 'none';
+        }
+
+        function runAgent() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                appendEvent('error', { error: 'WebSocket not connected' });
+                return;
+            }
+            if (isRunning) {
+                appendEvent('error', { error: 'Agent is still running. Wait for it to finish or press Stop.' });
+                return;
+            }
+
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                appendEvent('error', { error: 'Please enter a prompt' });
+                return;
+            }
+
+            const tools = getSelectedTools();
+
+            recordPromptHistory(prompt);
+
+            responseBuffer = '';
+            thinkingBuffer = '';
+            startTime = Date.now();
+
+            if (sessionActive && currentAgentId) {
+                // Follow-up turn: keep prior output, continue the same conversation
+                appendUserMessage(prompt);
+                setRunningUI(true);
+                ws.send(JSON.stringify({
+                    action: 'continue',
+                    agent_id: currentAgentId,
+                    prompt: prompt,
+                    tools: tools
+                }));
+                document.getElementById('promptInput').value = '';
+                return;
+            }
+
+            // Fresh conversation
+            const config = document.getElementById('configSelect').value;
+            const spMode = document.getElementById('systemPromptMode').value;
+            let wsPayload = {
+                action: 'start',
+                prompt: prompt,
+                config: config,
+                tools: tools
+            };
+            if (spMode === 'file') {
+                wsPayload.system_prompt = document.getElementById('systemPromptFile').value.trim() || 'SYSTEM_PROMPT.md';
+            } else {
+                wsPayload.system_prompt = '';
+                wsPayload.system_prompt_text = document.getElementById('systemPromptText').value.trim();
+            }
+
+            clearOutput();
+            createConversationRecord(prompt);
+            appendUserMessage(prompt);
+            setRunningUI(true);
+            ws.send(JSON.stringify(wsPayload));
+            document.getElementById('promptInput').value = '';
+        }
+
+        function newConversation() {
+            // Save the current conversation to Recents, then start a blank one.
+            if (isRunning) {
+                stopAgent();
+            }
+            saveActiveConversation();
+            sessionActive = false;
+            currentAgentId = null;
+            activeConvId = null;
+            responseBuffer = '';
+            thinkingBuffer = '';
+            clearOutput();
+            setRunningUI(false);
+            renderRecents();
+        }
+
+        // ===== Recents / conversation history (persisted on the server) =====
+        async function apiSaveConversation(conv) {
+            if (!conv) return;
+            try {
+                await fetch('/api/conversations/' + encodeURIComponent(conv.id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: conv.title,
+                        pinned: !!conv.pinned,
+                        html: conv.html || '',
+                        agent_id: conv.agentId || null
+                    })
+                });
+            } catch (e) {
+                console.warn('Failed to save conversation:', e);
+            }
+        }
+
+        async function apiDeleteConversation(id) {
+            try {
+                await fetch('/api/conversations/' + encodeURIComponent(id), { method: 'DELETE' });
+            } catch (e) {
+                console.warn('Failed to delete conversation:', e);
+            }
+        }
+
+        async function loadPersistedConversations() {
+            try {
+                const resp = await fetch('/api/conversations');
+                const data = await resp.json();
+                const list = (data && data.conversations) || [];
+                conversations = list.map(function(c) {
+                    return { id: c.id, title: c.title, pinned: !!c.pinned,
+                             updated_at: c.updated_at, html: null, agentId: null };
+                });
+                conversations.forEach(function(c) {
+                    const m = /^c(\d+)_/.exec(c.id || '');
+                    if (m) convSeq = Math.max(convSeq, parseInt(m[1], 10));
+                });
+            } catch (e) {
+                console.warn('Failed to load recents:', e);
+                conversations = [];
+            }
+            renderRecents();
+        }
+
+        function createConversationRecord(prompt) {
+            // Persist whatever was on screen for the previous conversation first.
+            saveActiveConversation();
+            const title = (prompt || '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'New chat';
+            const id = 'c' + (++convSeq) + '_' + Date.now();
+            const conv = { id: id, title: title, html: '', pinned: false, agentId: null };
+            conversations.unshift(conv);
+            activeConvId = id;
+            renderRecents();
+            apiSaveConversation(conv);
+        }
+
+        function getConversation(id) {
+            return conversations.find(function(c) { return c.id === id; });
+        }
+
+        function saveActiveConversation() {
+            if (!activeConvId) return;
+            const conv = getConversation(activeConvId);
+            if (conv) {
+                conv.html = document.getElementById('outputContent').innerHTML;
+                conv.agentId = currentAgentId || conv.agentId;
+                apiSaveConversation(conv);
+            }
+        }
+
+        async function loadConversation(id) {
+            if (isRunning) {
+                appendEvent('error', { error: 'Please wait for the current run to finish before switching conversations.' });
+                return;
+            }
+            if (id === activeConvId) return;
+            saveActiveConversation();
+            const conv = getConversation(id);
+            if (!conv) return;
+            // Lazy-load the transcript from the server the first time it is opened.
+            if (conv.html == null) {
+                try {
+                    const resp = await fetch('/api/conversations/' + encodeURIComponent(id));
+                    if (resp.ok) {
+                        const full = await resp.json();
+                        conv.html = full.html || '';
+                        if (full.agent_id) conv.agentId = full.agent_id;
+                    } else {
+                        conv.html = '';
+                    }
+                } catch (e) {
+                    conv.html = '';
+                }
+            }
+            activeConvId = id;
+            currentAgentId = conv.agentId;
+            sessionActive = !!conv.agentId;
+            responseBuffer = '';
+            thinkingBuffer = '';
+            document.getElementById('outputContent').innerHTML = conv.html ||
+                '<p style="color: var(--text-secondary);">This conversation is empty.</p>';
+            setRunningUI(false);
+            renderRecents();
+            const content = document.getElementById('outputContent');
+            content.scrollTop = content.scrollHeight;
+        }
+
+        function renderRecents() {
+            const list = document.getElementById('recentsList');
+            if (!conversations.length) {
+                list.innerHTML = '<p class="recents-empty">No conversations yet</p>';
+                return;
+            }
+            // Pinned first, keeping insertion order (newest first) within each group.
+            const ordered = conversations.slice().sort(function(a, b) {
+                return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+            });
+            const pinSvg = '<span class="recent-pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14l-1.5-3V6a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v8z"></path></svg></span>';
+            list.innerHTML = ordered.map(function(c) {
+                const active = c.id === activeConvId ? ' active' : '';
+                return '<div class="recent-item' + active + '" data-id="' + escapeHtml(c.id) + '" onclick="loadConversation(this.dataset.id)">' +
+                    '<span class="recent-title">' + escapeHtml(c.title) + '</span>' +
+                    (c.pinned ? pinSvg : '') +
+                    '<button class="recent-dots" title="Options" onclick="openRecentMenu(event, this.parentElement.dataset.id)">⋯</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function openRecentMenu(event, id) {
+            event.stopPropagation();
+            recentMenuTargetId = id;
+            const conv = getConversation(id);
+            document.getElementById('pinMenuLabel').textContent = (conv && conv.pinned) ? 'Unpin' : 'Pin';
+            const menu = document.getElementById('recentMenu');
+            menu.style.display = 'block';
+            // Anchor near the clicked 3-dot button.
+            const rect = event.currentTarget.getBoundingClientRect();
+            const mw = menu.offsetWidth || 180;
+            let left = rect.right - mw;
+            if (left < 8) left = 8;
+            let top = rect.bottom + 4;
+            const mh = menu.offsetHeight || 140;
+            if (top + mh > window.innerHeight - 8) top = rect.top - mh - 4;
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+        }
+
+        function closeRecentMenu() {
+            document.getElementById('recentMenu').style.display = 'none';
+            recentMenuTargetId = null;
+        }
+
+        function renameRecent() {
+            const conv = getConversation(recentMenuTargetId);
+            if (conv) {
+                const name = prompt('Rename conversation', conv.title);
+                if (name !== null && name.trim()) {
+                    conv.title = name.trim();
+                    renderRecents();
+                    apiSaveConversation(conv);
+                }
+            }
+            closeRecentMenu();
+        }
+
+        function togglePinRecent() {
+            const conv = getConversation(recentMenuTargetId);
+            if (conv) {
+                conv.pinned = !conv.pinned;
+                renderRecents();
+                apiSaveConversation(conv);
+            }
+            closeRecentMenu();
+        }
+
+        function deleteRecent() {
+            const id = recentMenuTargetId;
+            const idx = conversations.findIndex(function(c) { return c.id === id; });
+            if (idx !== -1) {
+                conversations.splice(idx, 1);
+                if (id === activeConvId) {
+                    activeConvId = null;
+                    currentAgentId = null;
+                    sessionActive = false;
+                    clearOutput();
+                    setRunningUI(false);
+                }
+                renderRecents();
+                apiDeleteConversation(id);
+            }
+            closeRecentMenu();
+        }
+
+        function stopAgent() {
+            if (ws && currentAgentId) {
+                ws.send(JSON.stringify({
+                    action: 'stop',
+                    agent_id: currentAgentId
+                }));
+            }
+            finishRun();
+        }
+
+        function finishRun() {
+            setRunningUI(false);
+
+            if (responseBuffer) {
+                const responseDiv = document.querySelector('.response-block');
+                if (responseDiv) {
+                    responseDiv.innerHTML = formatResponse(responseBuffer);
+                }
+            }
+            // Persist the finished transcript so it can be reopened from Recents.
+            saveActiveConversation();
+        }
+
+        function handleEvent(event) {
+            const type = event.type;
+            const data = event.data;
+
+            switch (type) {
+                case 'started':
+                    currentAgentId = data.agent_id;
+                    sessionActive = true;
+                    if (activeConvId) {
+                        const conv = getConversation(activeConvId);
+                        if (conv) {
+                            conv.agentId = data.agent_id;
+                            apiSaveConversation(conv);
+                        }
+                    }
+                    appendEvent('status', `Agent started (ID: ${data.agent_id})`);
+                    break;
+
+                case 'turn_started':
+                    appendEvent('status', 'Continuing conversation...');
+                    break;
+
+                case 'status':
+                    appendEvent('status', data);
+                    break;
+
+                case 'tools_loaded':
+                    appendEvent('status', `Loaded ${data.length} tools`);
+                    break;
+
+                case 'system_prompt':
+                    appendEvent('system-prompt', data);
+                    break;
+
+                case 'token':
+                    if (thinkingBuffer) {
+                        appendThinkingBlock(thinkingBuffer);
+                        thinkingBuffer = '';
+                    }
+                    responseBuffer += data;
+                    updateResponseBlock(responseBuffer);
+                    break;
+
+                case 'thinking':
+                    thinkingBuffer += data;
+                    updateThinkingBlock(thinkingBuffer);
+                    break;
+
+                case 'tool_start':
+                    flushBuffers();
+                    appendEvent('tool-start', data);
+                    break;
+
+                case 'tool_end':
+                    appendEvent('tool-end', data);
+                    break;
+
+                case 'tool_error':
+                    appendEvent('tool-error', data);
+                    break;
+
+                case 'error':
+                    appendEvent('error', data);
+                    finishRun();
+                    break;
+
+                case 'complete':
+                    flushBuffers();
+                    appendEvent('complete', data);
+                    updateStats(data);
+                    finishRun();
+                    break;
+
+                case 'stopped':
+                    appendEvent('status', 'Agent stopped');
+                    finishRun();
+                    break;
+            }
+
+            const content = document.getElementById('outputContent');
+            content.scrollTop = content.scrollHeight;
+        }
+
+        function flushBuffers() {
+            if (thinkingBuffer) {
+                appendThinkingBlock(thinkingBuffer);
+                thinkingBuffer = '';
+            }
+            if (responseBuffer) {
+                appendResponseBlock(responseBuffer);
+                responseBuffer = '';
+            }
+        }
+
+        function updateThinkingBlock(text) {
+            let block = document.querySelector('.thinking-block.active');
+            if (!block) {
+                block = document.createElement('div');
+                block.className = 'thinking-block active';
+                document.getElementById('outputContent').appendChild(block);
+            }
+            block.textContent = '💭 ' + text;
+        }
+
+        function appendThinkingBlock(text) {
+            const block = document.querySelector('.thinking-block.active');
+            if (block) {
+                block.classList.remove('active');
+            }
+        }
+
+        function updateResponseBlock(text) {
+            let block = document.querySelector('.response-block.active');
+            if (!block) {
+                block = document.createElement('div');
+                block.className = 'response-block active';
+                document.getElementById('outputContent').appendChild(block);
+            }
+            block.innerHTML = formatResponse(text);
+        }
+
+        function appendResponseBlock(text) {
+            const block = document.querySelector('.response-block.active');
+            if (block) {
+                block.classList.remove('active');
+            }
+        }
+
+        function formatResponse(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function appendUserMessage(text) {
+            const content = document.getElementById('outputContent');
+            const placeholder = content.querySelector('p');
+            if (placeholder && placeholder.textContent.includes('Output will appear')) {
+                placeholder.remove();
+            }
+            const div = document.createElement('div');
+            div.className = 'event';
+            div.style.cssText = 'background: var(--bg-tertiary); border-left: 3px solid var(--accent); padding: 8px 12px; margin: 12px 0 8px; border-radius: 6px;';
+            div.innerHTML = `<div style="color: var(--accent); font-weight: 600; margin-bottom: 4px;">🧑 You</div><div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(text)}</div>`;
+            content.appendChild(div);
+            content.scrollTop = content.scrollHeight;
+        }
+
+        function appendEvent(type, data) {
+            const content = document.getElementById('outputContent');
+
+            const placeholder = content.querySelector('p');
+            if (placeholder && placeholder.textContent.includes('Output will appear')) {
+                placeholder.remove();
+            }
+
+            const div = document.createElement('div');
+            div.className = `event event-${type}`;
+
+            switch (type) {
+                case 'status':
+                    div.innerHTML = `<span>ℹ️ ${escapeHtml(data)}</span>`;
+                    break;
+
+                case 'tool-start':
+                    var imgHtml = '';
+                    if (data.input_raw) {
+                        var imgUrls = extractImagePaths(data.input_raw);
+                        imgHtml = renderImageStrip(imgUrls);
+                    }
+                    div.innerHTML = `
+                        <div><span class="tool-name">🔧 ${escapeHtml(data.name)}</span></div>
+                        <div class="tool-input">Input: ${escapeHtml(data.input)}</div>
+                        ${imgHtml}
+                    `;
+                    break;
+
+                case 'tool-end':
+                    var imgHtml = '';
+                    if (data.output_raw) {
+                        // Try parsing output_raw as JSON to extract image paths
+                        var parsedOut = null;
+                        try { parsedOut = JSON.parse(data.output_raw); } catch(e) {}
+                        var imgUrls = parsedOut ? extractImagePaths(parsedOut) : [];
+                        // Also regex-match image paths from raw string if not fully JSON
+                        if (!imgUrls.length) {
+                            var re = /([A-Za-z0-9_\-\/\.]+\.(?:png|jpe?g|webp|bmp|gif))/ig, m = null, cap = 0, seen2 = {};
+                            while ((m = re.exec(data.output_raw)) !== null) {
+                                var s = m[1].replace(/\\/g, '/');
+                                if (!seen2[s]) { seen2[s] = 1; var u = pathToImageUrl(s); if (u && !imgUrls.includes(u)) imgUrls.push(u); cap++; if (cap > 8) break; }
+                            }
+                        }
+                        imgHtml = renderImageStrip(imgUrls);
+                    }
+                    div.innerHTML = `
+                        <div><span style="color: var(--accent);">✅ ${escapeHtml(data.name)} completed</span></div>
+                        <pre class="tool-output">${formatToolOutput(data.output)}</pre>
+                        ${imgHtml}
+                    `;
+                    break;
+
+                case 'tool-error':
+                    div.innerHTML = `
+                        <div>❌ ${escapeHtml(data.name)} error</div>
+                        <div>${escapeHtml(data.error)}</div>
+                    `;
+                    break;
+
+                case 'error':
+                    div.innerHTML = `<div>❌ Error: ${escapeHtml(data.error || data)}</div>`;
+                    if (data.traceback) {
+                        div.innerHTML += `<pre style="font-size: 0.8rem; margin-top: 8px; overflow-x: auto;">${escapeHtml(data.traceback)}</pre>`;
+                    }
+                    break;
+
+                case 'complete':
+                    const duration = data.duration ? data.duration.toFixed(1) : '?';
+                    const usage = data.usage || {};
+                    div.innerHTML = `
+                        <div>✅ Completed in ${duration}s</div>
+                        <div style="font-size: 0.85rem; margin-top: 4px;">
+                            Tokens: input=${escapeHtml(usage.input_tokens || 0)}, output=${escapeHtml(usage.output_tokens || 0)}
+                            ${usage.cache_read_input_tokens ? `, cache_read=${escapeHtml(usage.cache_read_input_tokens)}` : ''}
+                        </div>
+                    `;
+                    break;
+
+                case 'system-prompt':
+                    div.innerHTML = `
+                        <details style="cursor: pointer;">
+                            <summary style="color: var(--accent); font-weight: 600;">📋 System Prompt (click to expand)</summary>
+                            <pre style="font-size: 0.8rem; margin-top: 8px; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; background: var(--bg-primary); padding: 10px; border-radius: 4px;">${escapeHtml(data)}</pre>
+                        </details>
+                    `;
+                    break;
+            }
+
+            content.appendChild(div);
+        }
+
+        function updateStats(data) {
+            if (data.duration) {
+                document.getElementById('durationStat').style.display = 'flex';
+                document.getElementById('durationStat').querySelector('strong').textContent = data.duration.toFixed(1) + 's';
+            }
+            if (data.usage) {
+                document.getElementById('tokensStat').style.display = 'flex';
+                const total = (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0);
+                document.getElementById('tokensStat').querySelector('strong').textContent = total;
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('outputContent').innerHTML = '<p style="color: var(--text-secondary);">Output will appear here when you run the agent...</p>';
+            document.getElementById('durationStat').style.display = 'none';
+            document.getElementById('tokensStat').style.display = 'none';
+            responseBuffer = '';
+            thinkingBuffer = '';
+        }
+
+        function escapeHtml(text) {
+            if (typeof text !== 'string') text = String(text);
+            return text.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatToolOutput(text) {
+            if (typeof text !== 'string') text = String(text);
+            // Try to parse and pretty-print JSON
+            try {
+                const parsed = JSON.parse(text);
+                return escapeHtml(JSON.stringify(parsed, null, 2));
+            } catch (e) {
+                // Not valid JSON, just escape and preserve whitespace
+                return escapeHtml(text);
+            }
+        }
+
+        // --- Image rendering helpers ---
+        function looksLikeImage(path) {
+            return /\.(png|jpe?g|webp|bmp|gif)$/i.test(path || '');
+        }
+
+        function pathToImageUrl(path) {
+            if (!path) return '';
+            path = path.replace(/\\/g, '/');
+            if (/^https?:\/\//i.test(path)) return path;
+            // Use /api/file endpoint for absolute paths
+            if (path.charAt(0) === '/') return '/api/file?path=' + encodeURIComponent(path);
+            // Relative: treat as under repo root
+            return '/api/file?path=' + encodeURIComponent(path);
+        }
+
+        function collectStrings(obj, out, depth) {
+            if (depth > 5 || obj == null) return;
+            var t = typeof obj;
+            if (t === 'string') { out.push(obj); return; }
+            if (t !== 'object') return;
+            if (Array.isArray(obj)) {
+                for (var i = 0; i < obj.length; i++) collectStrings(obj[i], out, depth + 1);
+                return;
+            }
+            for (var k in obj) {
+                if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+                collectStrings(obj[k], out, depth + 1);
+            }
+        }
+
+        function extractImagePaths(obj) {
+            var strs = [];
+            collectStrings(obj, strs, 0);
+            var urls = [], seen = {};
+            for (var i = 0; i < strs.length; i++) {
+                var s = strs[i].replace(/\\/g, '/');
+                if (!looksLikeImage(s)) continue;
+                var url = pathToImageUrl(s);
+                if (!url || seen[url]) continue;
+                seen[url] = 1;
+                urls.push(url);
+                if (urls.length >= 8) break;
+            }
+            return urls;
+        }
+
+        function renderImageStrip(urls) {
+            if (!urls || !urls.length) return '';
+            var imgs = urls.map(function(u) {
+                var eu = escapeHtml(u);
+                // Encode URL characters before HTML escaping: HTML entities are
+                // decoded before the browser parses this CSS string.
+                var cssU = escapeHtml(u.replace(/[\u0000-\u0020"'()\\<>]/g, function(c) {
+                    return '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0');
+                }));
+                return '<div class="image-tile" style="--img: url(\'' + cssU + '\')" ' +
+                    'onclick="openImageOverlay(this.querySelector(\'img\').src)">' +
+                    '<img loading="lazy" src="' + eu + '" onerror="this.style.display=\'none\'"/></div>';
+            }).join('');
+            return '<div class="image-strip">' + imgs + '</div>';
+        }
+
+        // ===== Floating image viewer (in-page lightbox) =====
+        let overlayZoom = 1;
+
+        function openImageOverlay(src) {
+            const overlay = document.getElementById('imageOverlay');
+            const img = document.getElementById('imageOverlayImg');
+            overlayZoom = 1;
+            img.onload = applyOverlayZoom;
+            img.src = src;
+            applyOverlayZoom();
+            overlay.style.display = 'flex';
+            document.addEventListener('keydown', overlayKeyHandler);
+        }
+
+        function applyOverlayZoom() {
+            const img = document.getElementById('imageOverlayImg');
+            if (img.naturalWidth) {
+                // Original pixel ratio at zoom = 1.
+                img.style.width = (img.naturalWidth * overlayZoom) + 'px';
+                img.style.height = 'auto';
+            }
+        }
+
+        function zoomImage(dir) {
+            overlayZoom = Math.min(8, Math.max(0.1, overlayZoom * (dir > 0 ? 1.25 : 0.8)));
+            applyOverlayZoom();
+        }
+
+        function closeImageOverlay() {
+            document.getElementById('imageOverlay').style.display = 'none';
+            document.removeEventListener('keydown', overlayKeyHandler);
+        }
+
+        function overlayKeyHandler(e) {
+            if (e.key === 'Escape') closeImageOverlay();
+        }
+    </script>
+</body>
+</html>
